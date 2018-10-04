@@ -260,6 +260,7 @@ class Edgenet {
 				$result = wp_insert_post( $postarr, true );
 
 				if ( is_wp_error( $result ) ) {
+
 					die();
 				}
 
