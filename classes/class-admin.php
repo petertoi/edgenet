@@ -52,6 +52,10 @@ class Admin {
 		}
 		check_admin_referer( 'ussc-edgenet' );
 
+		if( isset( $_REQUEST['sync'] ) ) {
+			edgenet()->import_products();
+		}
+
 		$settings = filter_input( INPUT_POST, 'edgenet_settings', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
 		$api_filter = [

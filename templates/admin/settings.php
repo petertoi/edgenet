@@ -12,17 +12,17 @@ use USSC_Edgenet\Template;
 
 ?>
 <div class="wrap">
-	<h1><?php esc_html_e( 'USSC Edgenet API', 'ussc' ); ?></h1>
+    <h1><?php esc_html_e( 'USSC Edgenet API', 'ussc' ); ?></h1>
 
-	<form method="post" action="">
+    <form method="post" action="">
 		<?php wp_nonce_field( 'ussc-edgenet' ) ?>
-		<input type="hidden" name="action" value="update" />
-		<input type="hidden" name="option_page" value="ussc-edgenet" />
+        <input type="hidden" name="action" value="update" />
+        <input type="hidden" name="option_page" value="ussc-edgenet" />
 
-		<h2><?php esc_html_e( 'Core', 'ussc' ); ?></h2>
-		<table class="form-table">
+        <h2><?php esc_html_e( 'Core', 'ussc' ); ?></h2>
+        <table class="form-table">
 
-			<tbody>
+            <tbody>
 
 			<?php
 			echo Template::render_admin_table_row(
@@ -81,15 +81,24 @@ use USSC_Edgenet\Template;
 					[]
 				)
 			);
+
+			if ( false !== edgenet()->settings->requirement_set ) {
+				echo Template::render_admin_table_row(
+					'',
+					get_submit_button( __( 'manual sync', 'ussc' ), 'primary', 'sync' )
+				);
+			}
 			?>
 
-			</tbody>
-		</table>
+            </tbody>
+        </table>
 
-		<h2><?php esc_html_e( 'Product Field Map', 'ussc' ); ?></h2>
-		<table class="form-table">
 
-			<tbody>
+		<?php ?>
+        <h2><?php esc_html_e( 'Product Field Map', 'ussc' ); ?></h2>
+        <table class="form-table">
+
+            <tbody>
 			<?php
 			/**
 			 * Product Name
@@ -232,13 +241,13 @@ use USSC_Edgenet\Template;
 				)
 			);
 			?>
-			</tbody>
-		</table>
+            </tbody>
+        </table>
 
-		<h2><?php esc_html_e( 'Marketing', 'ussc' ); ?></h2>
-		<table class="form-table">
+        <h2><?php esc_html_e( 'Marketing', 'ussc' ); ?></h2>
+        <table class="form-table">
 
-			<tbody>
+            <tbody>
 			<?php
 			/**
 			 * Product Name
@@ -254,13 +263,13 @@ use USSC_Edgenet\Template;
 				)
 			);
 			?>
-			</tbody>
-		</table>
+            </tbody>
+        </table>
 
-		<h2><?php esc_html_e( 'Specifications', 'ussc' ); ?></h2>
-		<table class="form-table">
+        <h2><?php esc_html_e( 'Specifications', 'ussc' ); ?></h2>
+        <table class="form-table">
 
-			<tbody>
+            <tbody>
 			<?php
 			/**
 			 * Product Name
@@ -276,13 +285,13 @@ use USSC_Edgenet\Template;
 				)
 			);
 			?>
-			</tbody>
-		</table>
+            </tbody>
+        </table>
 
-		<h2><?php esc_html_e( 'Images', 'ussc' ); ?></h2>
-		<table class="form-table">
+        <h2><?php esc_html_e( 'Images', 'ussc' ); ?></h2>
+        <table class="form-table">
 
-			<tbody>
+            <tbody>
 			<?php
 			/**
 			 * Primary Image
@@ -312,13 +321,13 @@ use USSC_Edgenet\Template;
 				)
 			);
 			?>
-			</tbody>
-		</table>
+            </tbody>
+        </table>
 
-		<h2><?php esc_html_e( 'PDFs', 'ussc' ); ?></h2>
-		<table class="form-table">
+        <h2><?php esc_html_e( 'PDFs', 'ussc' ); ?></h2>
+        <table class="form-table">
 
-			<tbody>
+            <tbody>
 			<?php
 			/**
 			 * Product Name
@@ -334,16 +343,16 @@ use USSC_Edgenet\Template;
 				)
 			);
 			?>
-			</tbody>
-		</table>
+            </tbody>
+        </table>
 
 		<?php submit_button( __( 'Save Changes', 'ussc' ), 'primary', 'Update' ); ?>
 
-	</form>
+    </form>
 
 	<?php if ( edgenet()->debug ) : ?>
-		<h2><?php esc_html_e( 'Debug', 'ussc' ); ?></h2>
-		<pre><?php print_r( edgenet() ); ?></pre>
+        <h2><?php esc_html_e( 'Debug', 'ussc' ); ?></h2>
+        <pre><?php print_r( edgenet() ); ?></pre>
 	<?php endif; ?>
 
 
