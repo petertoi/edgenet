@@ -54,6 +54,11 @@ class Product {
 	public function get_attribute_value( $attribute_id, $default = '', $lang = 'en-US' ) {
 		$value = $default;
 		foreach ( $this->components as $component ) {
+			// just incase the wriong type of component is set
+			if( ! isset( $component['AttributeValues'] ) ) {
+
+				continue;
+			}
 			$attributes = $component['AttributeValues'][ $lang ];
 			$found      = array_filter( $attributes, function ( $attribute ) use ( $attribute_id ) {
 				return $attribute['AttributeId'] === $attribute_id;
