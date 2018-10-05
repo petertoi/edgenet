@@ -71,6 +71,7 @@ class Admin {
 		edgenet()->settings->save_api( $api );
 
 		if ( isset( $settings['requirements_not_set'] ) ) {
+			// TODO: Ensure we have API credentials, and requirement set chosen, and field map empty rather than hidden input.
 			edgenet()->update_requirement_set();
 		}
 
