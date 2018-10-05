@@ -26,6 +26,7 @@ class Edgenet {
 
 	const REQUIREMENT_SET = 'c726fa92-7119-2e37-30fe-304a1a3e579d';
 
+
 	/**
 	 * Absolute path to plugin folder on server with trailing slash
 	 *
@@ -62,6 +63,12 @@ class Edgenet {
 	public $api_adapter;
 
 	/**
+	 * kewy for the cron controler.
+	 *
+	 * @var cron_running_key
+	 */
+	public  $cron_running_key;
+	/**
 	 * USSC_Edgenet constructor.
 	 */
 	private function __construct() {
@@ -84,7 +91,7 @@ class Edgenet {
 
 		// Init admin.
 		add_action( 'plugins_loaded', [ $this, 'admin_init' ], 10 );
-
+		add_action( 'edgenet_sync_now', [ $this, 'import_products' ] );
 	}
 
 	/**
@@ -194,19 +201,63 @@ class Edgenet {
 		return $results;
 	}
 
-	public function import_products() {
+	public function import_products( $id = null ) {
 		global $post;
 
-		$product_ids = $this->get_product_ids();
+		$single = false;
 
+		if( null === $id ){
+			set_transient( $this->cron_running_key, true, MINUTE_IN_SECONDS * 5   );
+			$product_ids = $this->get_product_ids();
+		}elseif (is_array( $id ) ){
+			$product_ids = $id;
+		}else {
+			$product_ids = array( $id );
+			$single = true;
+		}
 //		$product_ids = ['8f6863de-47f0-426d-bf84-b6e8b9cc68e1'];
+
+		wp_defer_term_counting( true );
 
 		foreach ( $product_ids as $product_id ) {
 			$product = $this->get_product( $product_id );
 
+			if( is_wp_error( $product ) ){
+
+				continue;
+			}
+
 			$args = [
 				'meta_key'   => '_edgenet_id',
 				'meta_value' => $product->id,
+				'post_type'    => 'product',
+			];
+
+			$meta_input = [
+				'_edgenet_id'              => $product->id,
+				'_last_verified_date_time' => $product->last_verified_date_time,
+				'_is_verified'             => $product->is_verified,
+				'_archived'                => $product->archived,
+				'_archived_metadata'       => $product->archived_metadata,
+				'_record_date'             => $product->record_date,
+				'_audit_info'              => $product->audit_info,
+				'_gtin'                    => $product->get_attribute_value( $this->settings->_gtin, '' ),
+				'_sku'                     => $product->get_attribute_value( $this->settings->_sku, '' ),
+				'_regular_price'           => $product->get_attribute_value( $this->settings->_regular_price, '' ),
+				'_price'                   => $product->get_attribute_value( $this->settings->_regular_price, '' ),
+				'_weight'                  => $product->get_attribute_value( $this->settings->_weight, '' ),
+				'_length'                  => $product->get_attribute_value( $this->settings->_length, '' ),
+				'_width'                   => $product->get_attribute_value( $this->settings->_width, '' ),
+				'_height'                  => $product->get_attribute_value( $this->settings->_height, '' ),
+			];
+
+			$postarr = [
+				'post_author'  => $this->settings->api['import_user'],
+				'post_title'   => $product->get_attribute_value( $this->settings->post_title, '' ),
+				'post_content' => $product->get_attribute_value( $this->settings->post_content, '' ),
+				'post_excerpt' => $product->get_attribute_value( $this->settings->post_excerpt, '' ),
+				'post_status'  => 'publish',
+				'post_type'    => 'product',
 			];
 
 			$query = new \WP_Query( $args );
@@ -217,46 +268,62 @@ class Edgenet {
 				$last_verified_meta      = get_post_meta( $post->ID, '_last_verified_date_time', true );
 				$last_verified_date_time = new \DateTime( $last_verified_meta );
 
-				$import_last_verified_date_time = new \DateTime( $product['last_verified_date_time'] );
+				$import_last_verified_date_time = new \DateTime( $product->last_verified_date_time );
 
-				if ( $import_last_verified_date_time > $last_verified_date_time ) {
+
+
+				if ( $import_last_verified_date_time <= $last_verified_meta || $single  ) {
 					// update
 					// code not here yet
+
+					$postarr['post_id']  = $query->ID;
+					$result = wp_update_post( $postarr, true );
+
+					if ( is_wp_error( $result ) ) {
+
+						die();
+					}
+					// Iterate over Marketing fields and add to meta_input
+					$id = $this->settings->_marketing;
+					$meta_input['_marketing'] = $this->get_attribute_data( $id, $product );
+
+					// Iterate over Specification fields and add to meta_input
+					$id = $this->settings->_specifications;
+					$meta_input['_specifications'] = $this->get_attribute_data( $id, $product );
+
+					if ( ! empty( $meta_input ) ) {
+						foreach ( $meta_input as $field => $value ) {
+							update_post_meta( $query->ID, $field, $value );
+						}
+					}
+
+					// Sideload Digital Assets to image gallery + primary image.
+					$primary_image_id = $this->upload_image_from_id( $product->get_asset_value( $this->settings->_primary_image ), $query->ID );
+
+					if ( ! is_wp_error( $primary_image_id ) ) {
+						update_post_meta( $result, '_thumbnail_id', $primary_image_id );
+					}
+
+					// upload Assets
+					$id = $this->settings->_digital_assets;
+					$this->insert_digital_assets( $id, $product, $result );
+
+				} else {
+//					echo 'skiped';
 				}
 			} else {
 				// insert
-				$meta_input = [
-					'_edgenet_id'              => $product->id,
-					'_last_verified_date_time' => $product->last_verified_date_time,
-					'_is_verified'             => $product->is_verified,
-					'_archived'                => $product->archived,
-					'_archived_metadata'       => $product->archived_metadata,
-					'_record_date'             => $product->record_date,
-					'_audit_info'              => $product->audit_info,
-					'_gtin'                    => $product->get_attribute_value( $this->settings->_gtin, '' ),
-					'_sku'                     => $product->get_attribute_value( $this->settings->_sku, '' ),
-					'_regular_price'           => $product->get_attribute_value( $this->settings->_regular_price, '' ),
-					'_price'                   => $product->get_attribute_value( $this->settings->_regular_price, '' ),
-					'_weight'                  => $product->get_attribute_value( $this->settings->_weight, '' ),
-					'_length'                  => $product->get_attribute_value( $this->settings->_length, '' ),
-					'_width'                   => $product->get_attribute_value( $this->settings->_width, '' ),
-					'_height'                  => $product->get_attribute_value( $this->settings->_height, '' ),
-				];
+
 
 				// Iterate over Marketing fields and add to meta_input
+				$id = $this->settings->_marketing;
+				$meta_input['_marketing'] = $this->get_attribute_data( $id, $product );
 
 				// Iterate over Specification fields and add to meta_input
+				$id = $this->settings->_specifications;
+				$meta_input['_specifications'] = $this->get_attribute_data( $id, $product );
 
-				$postarr = [
-					'post_author'  => $this->settings->api['import_user'],
-					'post_title'   => $product->get_attribute_value( $this->settings->post_title, '' ),
-					'post_content' => $product->get_attribute_value( $this->settings->post_content, '' ),
-					'post_excerpt' => $product->get_attribute_value( $this->settings->post_excerpt, '' ),
-					'post_status'  => 'publish',
-					'post_type'    => 'product',
-					'meta_input'   => $meta_input,
-				];
-
+				$postarr['meta_input' ] = $meta_input;
 
 				$result = wp_insert_post( $postarr, true );
 
@@ -266,20 +333,39 @@ class Edgenet {
 				}
 
 				// Sideload Digital Assets to image gallery + primary image.
-				$edgenet_image_url = sprintf(
-					'https://assets.edgenet.com/%s?fileType=jpg&size=2400',
-					$product->get_asset_value( $this->settings->_primary_image )
-				);
-
-				$primary_image_id = $this->upload_image_from_url( $edgenet_image_url );
+				$primary_image_id = $this->upload_image_from_id( $product->get_asset_value( $this->settings->_primary_image ), $result );
 
 				if ( ! is_wp_error( $primary_image_id ) ) {
 					update_post_meta( $result, '_thumbnail_id', $primary_image_id );
 				}
 
+				// upload Assets
+				$id = $this->settings->_digital_assets;
+				$this->insert_digital_assets( $id, $product, $result );
+
+
+
 				// Sideload Documents to post.
+				$id = $this->settings->_documents;
+				$file_data = array();
+				$spec_attributes = $this->settings->requirement_set->get_attribute_group_attributes( $id );
+				$spec_attributes = array_map( function ( $attr ) use ( $product ){
+					$attr->value = $product->get_attribute_value( $attr->id );
+					return $attr;
+				}, $spec_attributes ) ;
+				foreach( $spec_attributes as $data ) {
+					//TODO: create posts fro docs with tax
+//					$file = $this->upload_image_from_url( $edgenet_image_url );
+//
+//					if ( ! is_wp_error( $file_id ) ) {
+//						update_post_meta( $result, '_thumbnail_id', $file_id );
+//					}
+				}
+//				update_post_meta( $result, '_documents', $file_data );
 
+				wp_defer_term_counting( false );
 
+				delete_transient( $this->cron_running_key );
 			}
 		}
 	}
@@ -293,10 +379,23 @@ class Edgenet {
 	 *
 	 * @return string $attachment_url
 	 */
-	function upload_image_from_url( $image_url ) {
+	function upload_image_from_id( $image_id, $post_id = 0 ) {
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/media.php';
+
+		// let look the image by ID so we down re-upload
+		$attachment = get_page_by_title($image_id, OBJECT, 'attachment');
+
+		if( null !== $attachment ) {
+
+			return $attachment->ID;
+		}
+
+		$image_url = sprintf(
+			'https://assets.edgenet.com/%s?fileType=jpg&size=2400',
+			$image_id
+		);
 
 		// Get the file extension for the image.
 		$file_ext = image_type_to_extension( exif_imagetype( $image_url ), false );
@@ -335,7 +434,7 @@ class Edgenet {
 			'tmp_name' => $temp_file,
 		];
 
-		$id = media_handle_sideload( $file_array, 0 );
+		$id = media_handle_sideload( $file_array, $post_id );
 
 		// Check for sideload errors.
 		if ( is_wp_error( $id ) ) {
@@ -343,6 +442,65 @@ class Edgenet {
 		}
 
 		return $id;
+	}
+
+	/**
+	 *
+	 *
+	 * @param $id
+	 * @param $product
+	 * @param $post_id
+	 *
+	 * @return void
+	 */
+	public function insert_digital_assets( $id, $product, $post_id ) {
+		$image_data      = array();
+		$spec_attributes = $this->settings->requirement_set->get_attribute_group_attributes( $id );
+		$spec_attributes = array_map( function ( $attr ) use ( $product ) {
+			$attr->value = $product->get_attribute_value( $attr->id );
+
+			return $attr;
+		}, $spec_attributes );
+		foreach ( $spec_attributes as $data ) {
+			$value         = $product->get_asset_value( $data->id );
+			$image_id      = null;
+			$woo_image_ids = array();
+			if ( ! empty( $value ) ) {
+
+
+				$image_id = $this->upload_image_from_id( $value, $post_id );
+			}
+			$data->wp_id     = $image_id;
+			$woo_image_ids[] = $image_id;
+
+			$image_data[ $data->id ] = $data;
+		}
+		update_post_meta( $post_id, '_digital_assets', $image_data );
+		update_post_meta( $post_id, '_product_image_gallery', implode( ',', $woo_image_ids ) );
+
+	}
+
+	/**
+	 *
+	 *
+	 * @param $id
+	 * @param $product
+	 *
+	 * @return array
+	 */
+	public function get_attribute_data( $id, $product ) {
+		$spec_data       = array();
+		$spec_attributes = $this->settings->requirement_set->get_attribute_group_attributes( $id );
+		$spec_attributes = array_map( function ( $attr ) use ( $product ) {
+			$attr->value = $product->get_attribute_value( $attr->id );
+
+			return $attr;
+		}, $spec_attributes );
+		foreach ( $spec_attributes as $data ) {
+			$spec_data[ $data->id ] = $data;
+		}
+
+		return $spec_data;
 	}
 
 

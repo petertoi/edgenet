@@ -23,6 +23,7 @@ class Admin {
 		add_action( 'init', [ $this, 'save_edgenet_settings' ] );
 		add_action( 'admin_menu', [ $this, 'edgenet_settings_page_menu' ] );
 
+		add_action( 'add_meta_boxes', [ $this, 'marketing_add_meta_box' ] );
 	}
 
 	public function edgenet_settings_page_menu() {
@@ -44,6 +45,16 @@ class Admin {
 		if ( ! is_admin() ) {
 			return false;
 		}
+		if( isset( $_REQUEST['sync'] ) ) {
+			if( 'manual sync' === $_REQUEST['sync'] ) {
+				if( false === get_transient( edgenet()->cron_running_key ) ) {
+					wp_schedule_single_event( time(), 'edgenet_sync_now' );
+				}
+
+			} else {
+				edgenet()->import_products( $_REQUEST['sync'] );
+			}
+		}
 		if ( ! isset( $_REQUEST['page'] ) || 'ussc-edgenet' !== $_REQUEST['page'] ) { // phpcs:ignore
 			return false;
 		}
@@ -52,9 +63,6 @@ class Admin {
 		}
 		check_admin_referer( 'ussc-edgenet' );
 
-		if( isset( $_REQUEST['sync'] ) ) {
-			edgenet()->import_products();
-		}
 
 		$settings = filter_input( INPUT_POST, 'edgenet_settings', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
@@ -115,4 +123,64 @@ class Admin {
 			] );
 		}
 	}
+
+	function ussc_marketing_get_meta( $value ) {
+		global $post;
+
+		$field = get_post_meta( $post->ID, $value, true );
+		if ( ! empty( $field ) ) {
+			return is_array( $field ) ? stripslashes_deep( $field ) : stripslashes( wp_kses_decode_entities( $field ) );
+		} else {
+			return false;
+		}
+	}
+
+	function marketing_add_meta_box() {
+		add_meta_box(
+			'ussc_marketing-ussc-marketing',
+			__( 'Marketing Meta', 'ussc' ),
+			[ $this, 'ussc_marketing_html' ],
+			'product',
+			'normal',
+			'default'
+		);
+		add_meta_box(
+			'ussc_ussc_specifications_html-ussc-marketing',
+			__( 'Specifications Meta', 'ussc' ),
+			[ $this, 'ussc_specifications_html' ],
+			'product',
+			'normal',
+			'default'
+		);
+	}
+
+
+	function ussc_marketing_html( $post) {
+
+		$data =  get_post_meta( get_the_ID(), '_marketing', true );
+		if( empty( $data ) ){
+			return;
+		}
+		echo '<ul>';
+		foreach ( $data as $value ){
+			printf( '<li><strong>%s:</strong> %s</li>', $value->description, $value->value );
+		}
+		echo '</ul>';
+	}
+	function ussc_specifications_html( $post) {
+
+		$data =  get_post_meta( get_the_ID(), '_specifications', true );
+
+		if( empty( $data ) ){
+			return;
+		}
+		echo '<ul>';
+		foreach ( $data as $value ){
+			printf( '<li><strong>%s:</strong> %s</li>', $value->description, $value->value );
+		}
+		echo '</ul>';
+	}
+
+
+
 }
