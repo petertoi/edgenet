@@ -66,40 +66,49 @@ class Admin {
 
 		edgenet()->settings->save_api( $api );
 
-		$field_map = filter_var( $settings['field_map'], FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
+		if ( isset( $settings['requirements_not_set'] ) ) {
+			edgenet()->update_requirement_set();
+		}
 
-		$post_map = filter_var( $field_map['post'], FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
+		// check we have data to save
+		if ( isset( $settings['field_map'] ) ) {
 
-		$post_filter = [
-			'post_title'   => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'post_content' => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'post_excerpt' => [ 'filter' => FILTER_SANITIZE_STRING ],
-		];
 
-		$post = filter_var_array( $post_map, $post_filter );
+			$field_map = filter_var( $settings['field_map'], FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
-		$postmeta_map = filter_var( $field_map['postmeta'], FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
+			$post_map = filter_var( $field_map['post'], FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
-		$postmeta_filter = [
-			'_gtin'           => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_sku'            => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_regular_price'  => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_weight'         => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_length'         => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_width'          => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_height'         => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_marketing'      => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_specifications' => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_primary_image'  => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_digital_assets' => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'_documents'      => [ 'filter' => FILTER_SANITIZE_STRING ],
-		];
+			$post_filter = [
+				'post_title'   => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'post_content' => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'post_excerpt' => [ 'filter' => FILTER_SANITIZE_STRING ],
+			];
 
-		$postmeta = filter_var_array( $postmeta_map, $postmeta_filter );
+			$post = filter_var_array( $post_map, $post_filter );
 
-		edgenet()->settings->save_field_map( [
-			'post'     => $post,
-			'postmeta' => $postmeta,
-		] );
+			$postmeta_map = filter_var( $field_map['postmeta'], FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
+
+			$postmeta_filter = [
+				'_gtin'           => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_sku'            => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_regular_price'  => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_weight'         => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_length'         => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_width'          => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_height'         => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_marketing'      => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_specifications' => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_primary_image'  => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_digital_assets' => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_documents'      => [ 'filter' => FILTER_SANITIZE_STRING ],
+			];
+
+			$postmeta = filter_var_array( $postmeta_map, $postmeta_filter );
+
+			edgenet()->settings->save_field_map( [
+				'post'     => $post,
+				'postmeta' => $postmeta,
+			] );
+		}
 	}
 }

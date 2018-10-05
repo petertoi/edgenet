@@ -86,6 +86,18 @@ use USSC_Edgenet\Template;
 			</tbody>
 		</table>
 
+        <?php
+        // check we have got the requiements from API and add hidden action tigger to load on save
+        if( false === edgenet()->settings->requirement_set ) {
+	      echo  Template::render_field(
+		        'hidden',
+		        'edgenet_settings[requirements_not_set]',
+		        'edgenet_settings[requirements_not_set]',
+		        'true'
+	        );
+        } else {
+       ?>
+
 		<h2><?php esc_html_e( 'Product Field Map', 'ussc' ); ?></h2>
 		<table class="form-table">
 
@@ -235,6 +247,7 @@ use USSC_Edgenet\Template;
 			</tbody>
 		</table>
 
+
 		<h2><?php esc_html_e( 'Marketing', 'ussc' ); ?></h2>
 		<table class="form-table">
 
@@ -336,7 +349,7 @@ use USSC_Edgenet\Template;
 			?>
 			</tbody>
 		</table>
-
+        <?php      } ?>
 		<?php submit_button( __( 'Save Changes', 'ussc' ), 'primary', 'Update' ); ?>
 
 	</form>
