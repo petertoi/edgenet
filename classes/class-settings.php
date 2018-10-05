@@ -82,6 +82,8 @@ class Settings {
 				return $this->field_map['postmeta'][ $name ];
 			}
 		}
+
+		return;
 	}
 
 	/**

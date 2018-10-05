@@ -197,9 +197,9 @@ class Edgenet {
 	public function import_products() {
 		global $post;
 
-//		$product_ids = $this->get_product_ids();
+		$product_ids = $this->get_product_ids();
 
-		$product_ids = ['8f6863de-47f0-426d-bf84-b6e8b9cc68e1'];
+//		$product_ids = ['8f6863de-47f0-426d-bf84-b6e8b9cc68e1'];
 
 		foreach ( $product_ids as $product_id ) {
 			$product = $this->get_product( $product_id );
@@ -221,6 +221,7 @@ class Edgenet {
 
 				if ( $import_last_verified_date_time > $last_verified_date_time ) {
 					// update
+					// code not here yet
 				}
 			} else {
 				// insert

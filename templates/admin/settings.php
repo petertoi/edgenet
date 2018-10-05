@@ -12,17 +12,17 @@ use USSC_Edgenet\Template;
 
 ?>
 <div class="wrap">
-    <h1><?php esc_html_e( 'USSC Edgenet API', 'ussc' ); ?></h1>
+	<h1><?php esc_html_e( 'USSC Edgenet API', 'ussc' ); ?></h1>
 
-    <form method="post" action="">
+	<form method="post" action="">
 		<?php wp_nonce_field( 'ussc-edgenet' ) ?>
-        <input type="hidden" name="action" value="update" />
-        <input type="hidden" name="option_page" value="ussc-edgenet" />
+		<input type="hidden" name="action" value="update" />
+		<input type="hidden" name="option_page" value="ussc-edgenet" />
 
-        <h2><?php esc_html_e( 'Core', 'ussc' ); ?></h2>
-        <table class="form-table">
+		<h2><?php esc_html_e( 'Core', 'ussc' ); ?></h2>
+		<table class="form-table">
 
-            <tbody>
+			<tbody>
 
 			<?php
 			echo Template::render_admin_table_row(
@@ -95,7 +95,19 @@ use USSC_Edgenet\Template;
 
 
 		<?php ?>
-        <h2><?php esc_html_e( 'Product Field Map', 'ussc' ); ?></h2>
+        <?php
+        // check we have got the requiements from API and add hidden action tigger to load on save
+        if( false === edgenet()->settings->requirement_set ) {
+	      echo  Template::render_field(
+		        'hidden',
+		        'edgenet_settings[requirements_not_set]',
+		        'edgenet_settings[requirements_not_set]',
+		        'true'
+	        );
+        } else {
+       ?>
+
+		<h2><?php esc_html_e( 'Product Field Map', 'ussc' ); ?></h2>
         <table class="form-table">
 
             <tbody>
@@ -345,7 +357,7 @@ use USSC_Edgenet\Template;
 			?>
             </tbody>
         </table>
-
+        <?php      } ?>
 		<?php submit_button( __( 'Save Changes', 'ussc' ), 'primary', 'Update' ); ?>
 
     </form>
