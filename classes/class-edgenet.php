@@ -122,11 +122,15 @@ class Edgenet {
 	}
 
 	/**
+	 * Update Edgenet Distribution Requirement Set configuration.
+	 *
+	 * @param string $set_uid The requirement set UID.
+	 *
 	 * @return Item\Requirement_Set|\WP_Error
 	 */
-	public function update_requirement_set() {
+	public function update_requirement_set( $set_uid ) {
 
-		$set = $this->api_adapter->requirementset( self::REQUIREMENT_SET );
+		$set = $this->api_adapter->requirementset( $set_uid );
 
 		/**
 		 * Convert Attribute arrays to fully-hydrated Attribute objects.
@@ -155,7 +159,14 @@ class Edgenet {
 
 	}
 
-	public function get_product_ids( $search = '' ) {
+	/**
+	 * Get the product IDs based on search parameters.
+	 *
+	 * @param array $search Search parameters.
+	 *
+	 * @return array|\WP_Error
+	 */
+	public function get_product_ids( $search = [] ) {
 
 		$iteration      = 0;
 		$max_iterations = 10;
@@ -164,14 +175,6 @@ class Edgenet {
 		$take = 100;
 
 		$ids = [];
-
-		$search = [
-			'Archived'                 => false,
-			'DataOwner'                => self::DATA_OWNER,
-			'Desc'                     => false,
-			'Recipients'               => [ 'c964a170-12e7-4e70-bc72-11016d97864f' ],
-			'SubscriptionStatusFilter' => 'All',
-		];
 
 		do {
 			$iteration ++;
@@ -183,21 +186,37 @@ class Edgenet {
 			$ids   = array_merge( $ids, $results['Results'] );
 			$total = $results['TotalHitCount'];
 			$skip  = $skip + $results['ResultCount'];
-		} while ( $skip < $total || $iteration >= $max_iterations );
+		} while ( $skip < $total && $iteration <= $max_iterations );
 
 		return $ids;
 	}
 
+	/**
+	 * Get a Product by UID.
+	 *
+	 * @param string $product_uid The product UID.
+	 *
+	 * @return array|Item\Product|\WP_Error
+	 */
 	public function get_product( $product_uid = '' ) {
 		$results = $this->api_adapter->product( $product_uid );
 
 		return $results;
 	}
 
+	/**
+	 * Utility function to import all products.
+	 */
 	public function import_products() {
 		global $post;
 
-		$product_ids = $this->get_product_ids();
+		$product_ids = $this->get_product_ids( [
+			'Archived'                 => false,
+			'DataOwner'                => self::DATA_OWNER,
+			'Desc'                     => false,
+			'Recipients'               => [ 'c964a170-12e7-4e70-bc72-11016d97864f' ],
+			'SubscriptionStatusFilter' => 'All',
+		] );
 
 //		$product_ids = ['8f6863de-47f0-426d-bf84-b6e8b9cc68e1'];
 

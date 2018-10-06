@@ -41,9 +41,10 @@ class API_Adapter {
 	/**
 	 * API_Adapter constructor.
 	 *
-	 * @param string $username Edgenet API username.
-	 * @param string $secret   Edgenet API secret.
-	 * @param API    $api      Edgenet API instance.
+	 * @param string $username   Edgenet API username.
+	 * @param string $secret     Edgenet API secret.
+	 * @param string $data_owner Edgenet Data Owner.
+	 * @param API    $api        Edgenet API instance.
 	 */
 	public function __construct( $username, $secret, $data_owner, $api ) {
 		$this->username   = $username;
@@ -247,11 +248,13 @@ class API_Adapter {
 	}
 
 	/**
-	 * @param string $product_search_filter
-	 * @param int    $skip
-	 * @param int    $take
+	 * Search for Products.
 	 *
-	 * @return array|mixed|object|\WP_Error
+	 * @param string $product_search_filter Search parameters.
+	 * @param int    $skip                  Number of items to skip, for pagination.
+	 * @param int    $take                  Number of items to return.
+	 *
+	 * @return array|\WP_Error
 	 */
 	public function productsearch( $product_search_filter = '', $skip = 0, $take = 100 ) {
 
@@ -281,9 +284,11 @@ class API_Adapter {
 	}
 
 	/**
-	 * @param $product_uid
+	 * Get a Product.
 	 *
-	 * @return array|Product|\WP_Error
+	 * @param string $product_uid The product UID.
+	 *
+	 * @return Product|\WP_Error
 	 */
 	public function product( $product_uid ) {
 
