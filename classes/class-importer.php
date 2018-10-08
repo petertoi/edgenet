@@ -271,10 +271,12 @@ class Importer {
 							]
 						);
 
-						add_term_meta( $term['term_id'], '_edgenet_id', $taxonomy_node->id, true );
-						add_term_meta( $term['term_id'], '_edgenet_id_' . $taxonomy_node->id, $taxonomy_node->id, true );
-						add_term_meta( $term['term_id'], '_edgenet_parent_id', $taxonomy_node->parent_id, true );
-						add_term_meta( $term['term_id'], '_edgenet_taxonomy_id', $taxonomy_node->taxonomy_id, true );
+						if ( ! is_wp_error( $term ) ) {
+							add_term_meta( $term['term_id'], '_edgenet_id', $taxonomy_node->id, true );
+							add_term_meta( $term['term_id'], '_edgenet_id_' . $taxonomy_node->id, $taxonomy_node->id, true );
+							add_term_meta( $term['term_id'], '_edgenet_parent_id', $taxonomy_node->parent_id, true );
+							add_term_meta( $term['term_id'], '_edgenet_taxonomy_id', $taxonomy_node->taxonomy_id, true );
+						}
 
 						// Refresh list of Product Categories after insert.
 						$product_cats           = get_terms( $term_args );
