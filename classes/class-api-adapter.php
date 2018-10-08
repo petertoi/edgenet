@@ -11,6 +11,7 @@ namespace USSC_Edgenet;
 use USSC_Edgenet\Item\Product;
 use USSC_Edgenet\Item\Requirement_Set;
 use USSC_Edgenet\Item\Attribute;
+use USSC_Edgenet\Item\Taxonomy_Node;
 
 /**
  * Class API_Adapter
@@ -189,15 +190,15 @@ class API_Adapter {
 	/**
 	 * Retrieve a Requirement Set
 	 *
-	 * @param string $uid UID of the Requirement Set. Try: c726fa92-7119-2e37-30fe-304a1a3e579d
+	 * @param string $requirement_set_id UID of the Requirement Set. Try: c726fa92-7119-2e37-30fe-304a1a3e579d.
 	 *
 	 * @return Requirement_Set|\WP_Error
 	 */
-	public function requirementset( $uid ) {
+	public function requirementset( $requirement_set_id ) {
 
 		$path = 'api/distribute/requirementset/';
 
-		$data = [ $uid ];
+		$data = [ $requirement_set_id ];
 
 		$response = $this->post( $path, $data );
 
@@ -286,13 +287,13 @@ class API_Adapter {
 	/**
 	 * Get a Product.
 	 *
-	 * @param string $product_uid The product UID.
+	 * @param string $product_id The product ID.
 	 *
 	 * @return Product|\WP_Error
 	 */
-	public function product( $product_uid ) {
+	public function product( $product_id ) {
 
-		$path = 'api/product/' . rawurlencode( $product_uid );
+		$path = 'api/product/' . rawurlencode( $product_id );
 
 		$response = $this->get( $path );
 
@@ -313,6 +314,87 @@ class API_Adapter {
 		}
 
 		return $product;
+	}
+
+	/**
+	 * Get TaxonomyNode information
+	 * - TaxonomyNode Attributes
+	 * - Pathstoroot
+	 *
+	 * @param string $taxonomy_id The taxonomy ID.
+	 *
+	 * @return Taxonomy_Node[] An array of Taxonomy_Nodes.
+	 */
+	public function taxonomynode_pathtoroot( $taxonomy_id ) {
+
+		$path = sprintf( 'api/taxonomy/taxonomynode/%s/pathtoroot/',
+			rawurlencode( $taxonomy_id )
+		);
+
+		$response = $this->get( $path );
+
+		if ( is_wp_error( $response ) ) {
+			$path = $response;
+		} else {
+			$body     = wp_remote_retrieve_body( $response );
+			$path     = [];
+			$path_raw = json_decode( $body, true );
+			foreach ( $path_raw as $taxonomy_node_array ) {
+				if ( isset( $taxonomy_node_array['Type'] ) && Taxonomy_Node::TYPE === $taxonomy_node_array['Type'] ) {
+					$taxonomy_node = new Taxonomy_Node( $taxonomy_node_array );
+				} else {
+					$taxonomy_node = new \WP_Error(
+						'ussc-edgenet-taxonomynode-error',
+						__( 'TaxonomyNode Type missing from endpoint response.', 'ussc' ),
+						$taxonomy_node_array
+					);
+				}
+				$path[] = $taxonomy_node;
+			}
+		}
+
+		return $path;
+	}
+
+	/**
+	 * Get Paths to Root for Taxonomy Nodes.
+	 *
+	 * @param string[] $taxonomy_ids The taxonomy IDs.
+	 *
+	 * @return Taxonomy_Node[] An array of Taxonomy_Nodes for each taxonomy ID provided.
+	 */
+	public function taxonomynodes_pathstoroot( $taxonomy_ids ) {
+
+		$path = 'api/taxonomy/taxonomynode/pathstoroot';
+
+		$data = $taxonomy_ids;
+
+		$response = $this->post( $path, $data );
+
+		if ( is_wp_error( $response ) ) {
+			$paths = $response;
+		} else {
+			$body      = wp_remote_retrieve_body( $response );
+			$paths     = [];
+			$paths_raw = json_decode( $body, true );
+			foreach ( $paths_raw as $key => $path_to_root ) {
+				$paths[ $key ] = [];
+				foreach ( $path_to_root as $taxonomy_node_array ) {
+					if ( isset( $taxonomy_node_array['Type'] ) && Taxonomy_Node::TYPE === $taxonomy_node_array['Type'] ) {
+						$taxonomy_node = new Taxonomy_Node( $taxonomy_node_array );
+					} else {
+						$taxonomy_node = new \WP_Error(
+							'ussc-edgenet-taxonomynode-error',
+							__( 'TaxonomyNode Type missing from endpoint response.', 'ussc' ),
+							$taxonomy_node_array
+						);
+					}
+					$paths[ $key ][] = $taxonomy_node;
+				}
+			}
+		}
+
+		return $paths;
 	}
 
 }

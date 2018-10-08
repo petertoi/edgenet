@@ -45,14 +45,13 @@ class Admin {
 		if ( ! is_admin() ) {
 			return false;
 		}
-		if( isset( $_REQUEST['sync'] ) ) {
-			if( 'manual sync' === $_REQUEST['sync'] ) {
-				if( false === get_transient( edgenet()->cron_running_key ) ) {
+		if ( isset( $_REQUEST['sync'] ) ) {
+			if ( 'Import Products Manually' === $_REQUEST['sync'] ) {
+				if ( false === get_transient( Edgenet::ACTIVE_CRON_KEY ) ) {
 					wp_schedule_single_event( time(), 'edgenet_sync_now' );
 				}
-
 			} else {
-				edgenet()->import_products( $_REQUEST['sync'] );
+				edgenet()->import_products( [ $_REQUEST['sync'] ], true );
 			}
 		}
 		if ( ! isset( $_REQUEST['page'] ) || 'ussc-edgenet' !== $_REQUEST['page'] ) { // phpcs:ignore
@@ -155,33 +154,32 @@ class Admin {
 		);
 	}
 
+	function ussc_marketing_html( $post ) {
 
-	function ussc_marketing_html( $post) {
-
-		$data =  get_post_meta( get_the_ID(), '_marketing', true );
-		if( empty( $data ) ){
+		$marketing_attributes = get_post_meta( get_the_ID(), '_marketing', true );
+		if ( empty( $marketing_attributes ) ) {
 			return;
 		}
 		echo '<ul>';
-		foreach ( $data as $value ){
-			printf( '<li><strong>%s:</strong> %s</li>', $value->description, $value->value );
-		}
-		echo '</ul>';
-	}
-	function ussc_specifications_html( $post) {
-
-		$data =  get_post_meta( get_the_ID(), '_specifications', true );
-
-		if( empty( $data ) ){
-			return;
-		}
-		echo '<ul>';
-		foreach ( $data as $value ){
-			printf( '<li><strong>%s:</strong> %s</li>', $value->description, $value->value );
+		foreach ( $marketing_attributes as $marketing_attribute ) {
+			printf( '<li><strong>%s:</strong> %s</li>', $marketing_attribute['attribute']->description, $marketing_attribute['value'] );
 		}
 		echo '</ul>';
 	}
 
+	function ussc_specifications_html( $post ) {
+
+		$specifications_attributes = get_post_meta( get_the_ID(), '_specifications', true );
+
+		if ( empty( $specifications_attributes ) ) {
+			return;
+		}
+		echo '<ul>';
+		foreach ( $specifications_attributes as $specifications_attribute ) {
+			printf( '<li><strong>%s:</strong> %s</li>', $specifications_attribute['attribute']->description, $specifications_attribute['value'] );
+		}
+		echo '</ul>';
+	}
 
 
 }

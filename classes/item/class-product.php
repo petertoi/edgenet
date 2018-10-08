@@ -32,10 +32,10 @@ class Product {
 	public $audit_info;
 
 	public function __construct( $params ) {
-		$this->id                      = $params['id'];
-		$this->archived                = $params['Archived'];
-		if( isset( $params['ArchivedMetadata'] ) ) {
-			$this->archived_metadata       = $params['ArchivedMetadata'];
+		$this->id       = $params['id'];
+		$this->archived = $params['Archived'];
+		if ( isset( $params['ArchivedMetadata'] ) ) {
+			$this->archived_metadata = $params['ArchivedMetadata'];
 		}
 		$this->components              = $params['Components'];
 		$this->record_date             = $params['RecordDate'];
@@ -45,26 +45,19 @@ class Product {
 		$this->audit_info              = $params['AuditInfo'];
 	}
 
-	public function get_post_data( $name ) {
-
-	}
-
-	public function get_postmeta_data( $name ) {
-
-	}
-
 	public function get_attribute_value( $attribute_id, $default = '', $lang = 'en-US' ) {
 		$value = $default;
 		foreach ( $this->components as $component ) {
-			// just incase the wriong type of component is set
-			if( ! isset( $component['AttributeValues'] ) ) {
-
+			if ( empty( $component['AttributeValues'] ) ) {
 				continue;
 			}
+
 			$attributes = $component['AttributeValues'][ $lang ];
-			$found      = array_filter( $attributes, function ( $attribute ) use ( $attribute_id ) {
+
+			$found = array_filter( $attributes, function ( $attribute ) use ( $attribute_id ) {
 				return $attribute['AttributeId'] === $attribute_id;
 			} );
+
 			if ( $found ) {
 				$attribute = array_shift( $found );
 				$value     = $attribute['Value'];
@@ -76,11 +69,42 @@ class Product {
 
 	}
 
+	/**
+	 * Get set of Attribute IDs and Values from Product.
+	 *
+	 * @param array  $attribute_ids Array of Attribute IDs.
+	 * @param string $default       Fallback value if attribute not found.
+	 * @param string $lang          Language.
+	 *
+	 * @return array
+	 */
+	public function get_attributes_values( $attributes, $default = '', $lang = 'en-US' ) {
+		$attributes_values = array_map( function ( $attribute ) use ( $default, $lang ) {
+			/**
+			 * Attribute object.
+			 *
+			 * @var $attribute Attribute
+			 */
+			$attribute_value = [
+				'attribute' => $attribute,
+				'value'     => $this->get_attribute_value( $attribute->id, $default, $lang ),
+			];
+
+			return $attribute_value;
+		}, $attributes );
+
+		$attributes_values = array_filter( $attributes_values, function ( $attribute_value ) {
+			return ! empty( $attribute_value['value'] );
+		} );
+
+		return $attributes_values;
+	}
+
 	public function get_multi_asset_value( $attribute_id, $default = '', $lang = 'en-US' ) {
 		$value = $default;
 		foreach ( $this->components as $component ) {
 			// just incase the wriong type of component is set
-			if( ! isset( $component['AttributeValues'] ) ) {
+			if ( ! isset( $component['AttributeValues'] ) ) {
 
 				continue;
 			}

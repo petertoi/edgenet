@@ -21,7 +21,6 @@ use USSC_Edgenet\Template;
 
 		<h2><?php esc_html_e( 'Core', 'ussc' ); ?></h2>
 		<table class="form-table">
-
 			<tbody>
 
 			<?php
@@ -65,6 +64,17 @@ use USSC_Edgenet\Template;
 					'edgenet_settings[api][requirement_set]',
 					'secret',
 					USSC_Edgenet\Edgenet::REQUIREMENT_SET,
+					[ 'class' => 'regular-text', 'readonly' => 'readonly' ]
+				)
+			);
+
+			echo Template::render_admin_table_row(
+				__( 'Taxonomy ID', 'ussc' ),
+				Template::render_field(
+					'text',
+					'edgenet_settings[api][taxonomy_id]',
+					'secret',
+					USSC_Edgenet\Edgenet::TAXONOMY_ID,
 					[ 'class' => 'regular-text', 'readonly' => 'readonly' ]
 				)
 			);
