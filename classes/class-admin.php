@@ -23,6 +23,7 @@ class Admin {
 		add_action( 'init', [ $this, 'save_edgenet_settings' ] );
 		add_action( 'admin_menu', [ $this, 'edgenet_settings_page_menu' ] );
 
+		add_action( 'add_meta_boxes', [ $this, 'marketing_add_meta_box' ] );
 	}
 
 	public function edgenet_settings_page_menu() {
@@ -44,6 +45,15 @@ class Admin {
 		if ( ! is_admin() ) {
 			return false;
 		}
+		if ( isset( $_REQUEST['sync'] ) ) {
+			if ( 'Import Products Manually' === $_REQUEST['sync'] ) {
+				if ( false === get_transient( Edgenet::ACTIVE_CRON_KEY ) ) {
+					wp_schedule_single_event( time(), 'edgenet_sync_now' );
+				}
+			} else {
+				edgenet()->import_products( [ $_REQUEST['sync'] ], true );
+			}
+		}
 		if ( ! isset( $_REQUEST['page'] ) || 'ussc-edgenet' !== $_REQUEST['page'] ) { // phpcs:ignore
 			return false;
 		}
@@ -52,9 +62,6 @@ class Admin {
 		}
 		check_admin_referer( 'ussc-edgenet' );
 
-		if( isset( $_REQUEST['sync'] ) ) {
-			edgenet()->import_products();
-		}
 
 		$settings = filter_input( INPUT_POST, 'edgenet_settings', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
@@ -71,7 +78,8 @@ class Admin {
 		edgenet()->settings->save_api( $api );
 
 		if ( isset( $settings['requirements_not_set'] ) ) {
-			edgenet()->update_requirement_set();
+			// TODO: Ensure we have API credentials, and requirement set chosen, and field map empty rather than hidden input.
+			edgenet()->update_requirement_set( Edgenet::REQUIREMENT_SET );
 		}
 
 		// check we have data to save
@@ -115,4 +123,63 @@ class Admin {
 			] );
 		}
 	}
+
+	function ussc_marketing_get_meta( $value ) {
+		global $post;
+
+		$field = get_post_meta( $post->ID, $value, true );
+		if ( ! empty( $field ) ) {
+			return is_array( $field ) ? stripslashes_deep( $field ) : stripslashes( wp_kses_decode_entities( $field ) );
+		} else {
+			return false;
+		}
+	}
+
+	function marketing_add_meta_box() {
+		add_meta_box(
+			'ussc_marketing-ussc-marketing',
+			__( 'Marketing Meta', 'ussc' ),
+			[ $this, 'ussc_marketing_html' ],
+			'product',
+			'normal',
+			'default'
+		);
+		add_meta_box(
+			'ussc_ussc_specifications_html-ussc-marketing',
+			__( 'Specifications Meta', 'ussc' ),
+			[ $this, 'ussc_specifications_html' ],
+			'product',
+			'normal',
+			'default'
+		);
+	}
+
+	function ussc_marketing_html( $post ) {
+
+		$marketing_attributes = get_post_meta( get_the_ID(), '_marketing', true );
+		if ( empty( $marketing_attributes ) ) {
+			return;
+		}
+		echo '<ul>';
+		foreach ( $marketing_attributes as $marketing_attribute ) {
+			printf( '<li><strong>%s:</strong> %s</li>', $marketing_attribute['attribute']->description, $marketing_attribute['value'] );
+		}
+		echo '</ul>';
+	}
+
+	function ussc_specifications_html( $post ) {
+
+		$specifications_attributes = get_post_meta( get_the_ID(), '_specifications', true );
+
+		if ( empty( $specifications_attributes ) ) {
+			return;
+		}
+		echo '<ul>';
+		foreach ( $specifications_attributes as $specifications_attribute ) {
+			printf( '<li><strong>%s:</strong> %s</li>', $specifications_attribute['attribute']->description, $specifications_attribute['value'] );
+		}
+		echo '</ul>';
+	}
+
+
 }

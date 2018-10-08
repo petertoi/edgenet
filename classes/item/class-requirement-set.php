@@ -93,7 +93,7 @@ class Requirement_Set {
 	}
 
 	/**
-	 * Get an Array of all Attributes contained across all Attibute_Groups within this Requirement_Set.
+	 * Get all the Attributes contained across all Attibute_Groups within this Requirement_Set.
 	 *
 	 * @return array
 	 */
@@ -110,11 +110,13 @@ class Requirement_Set {
 	}
 
 	/**
-	 * Get an Array of all Attributes within a particular Attribute_Group.
+	 * Get all the Attributes within a specific Attribute_Group.
+	 *
+	 * @param string $group_id Attribute Group UID.
 	 *
 	 * @return array
 	 */
-	public function get_attribute_group_attributes( $group_id ) {
+	public function get_attributes_by_group_id( $group_id ) {
 		$attributes = [];
 
 		$result = array_filter( $this->attribute_groups, function ( $group ) use ( $group_id ) {
@@ -123,7 +125,7 @@ class Requirement_Set {
 
 		if ( $result ) {
 			$group      = array_shift( $result );
-			$attributes = $group->attributes;
+			$attributes = array_unique( $group->attributes, SORT_REGULAR );
 		}
 
 		return $attributes;

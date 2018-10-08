@@ -1,0 +1,545 @@
+<?php
+/**
+ * Filename class-importer.php
+ *
+ * @package ussc
+ * @author  Peter Toi <peter@petertoi.com>
+ */
+
+namespace USSC_Edgenet;
+
+use USSC_Edgenet\Item\Attribute;
+use USSC_Edgenet\Item\Attribute_Group;
+use USSC_Edgenet\Item\Product;
+
+class Importer {
+
+	const IMPORTER_ACTIVE_TRANSIENT = 'edgenet_importer_active';
+
+	/**
+	 * Importer constructor.
+	 */
+	public function __construct() {
+	}
+
+	/**
+	 * Update Edgenet Distribution Requirement Set configuration.
+	 *
+	 * @param string $requirement_set_id The requirement set ID.
+	 *
+	 * @return Item\Requirement_Set|\WP_Error
+	 */
+	public function import_requirement_set( $requirement_set_id ) {
+
+		$set = edgenet()->api_adapter->requirementset( $requirement_set_id );
+
+		/**
+		 * Convert Attribute arrays to fully-hydrated Attribute objects.
+		 *
+		 * @var $group Attribute_Group
+		 */
+		foreach ( $set->attribute_groups as $group ) {
+
+			$attribute_ids = $group->get_attribute_ids();
+
+			$attribute_objects = [];
+
+			$chunked_attribute_ids = array_chunk( $attribute_ids, 100 );
+
+			foreach ( $chunked_attribute_ids as $chunk_ids ) {
+				$chunk_objects     = edgenet()->api_adapter->attribute( $chunk_ids );
+				$attribute_objects = array_merge( $attribute_objects, $chunk_objects );
+			}
+
+			$group->attributes = $attribute_objects;
+		}
+
+		edgenet()->settings->save_requirement_set( $set );
+
+		return $set;
+
+	}
+
+	/**
+	 * Import a set of Products
+	 *
+	 * @param array $product_ids  Specific Product ID(s) to import. Leave null for all products.
+	 * @param bool  $force_update Force update products regardless of verified date.
+	 *
+	 * @return array Array of Product IDs and import status.
+	 */
+	public function import_products( $product_ids = [], $force_update = false ) {
+		$status = [];
+
+		// Validate input.
+		if ( ! is_array( $product_ids ) ) {
+			_doing_it_wrong(
+				__FUNCTION__,
+				wp_kses_post( __( 'Please provide an array of Product IDs', 'ussc' ) ),
+				'1.0.0'
+			);
+		}
+
+		// Get $product_ids via API if not provided.
+		if ( empty( $product_ids ) ) {
+			set_transient( self::IMPORTER_ACTIVE_TRANSIENT, true, MINUTE_IN_SECONDS * 5 );
+			$product_ids = $this->get_product_ids( [
+				'Archived'                 => false,
+				'DataOwner'                => Edgenet::DATA_OWNER,
+				'Desc'                     => false,
+				'Recipients'               => [ 'c964a170-12e7-4e70-bc72-11016d97864f' ],
+				'SubscriptionStatusFilter' => 'All',
+			] );
+		}
+
+		// Defer term counting while doing a batch import.
+		wp_defer_term_counting( true );
+
+		foreach ( $product_ids as $product_id ) {
+			$status[] = $this->import_product( $product_id, $force_update );
+
+		}
+
+		// Re-enable term counting to sync taxonomy term counts.
+		wp_defer_term_counting( false );
+
+		return $status;
+	}
+
+	/**
+	 * Import a single Product
+	 *
+	 * @param int  $product_id   The product ID to import.
+	 * @param bool $force_update Whether to force import/update data regardless of verified_date.
+	 *
+	 * @return int|\WP_Error The Post ID on success or \WP_Error if failure.
+	 */
+	public function import_product( $product_id, $force_update = false ) {
+		global $post;
+
+		// Track if we skipped the product update when comparing last_verified times.
+		$update_skipped = false;
+
+		// Get the full Product record from Edgenet.
+		$product = $this->get_product( $product_id );
+
+		// Bail early if we're unable to get the Product record.
+		if ( is_wp_error( $product ) ) {
+			return $product;
+		}
+
+		// Setup WP_Query args to check if this product already exists.
+		// @see https://vip.wordpress.com/documentation/querying-on-meta_value/ for info on this query.
+		$args = [
+			'meta_key'     => '_edgenet_id_' . $product->id, /* phpcs:ignore */
+			'meta_compare' => 'EXISTS',
+			'post_type'    => 'product',
+		];
+
+		// Run the WP_Query.
+		$query = new \WP_Query( $args );
+
+		// Insert, update, or bypass this post?
+		if ( $query->have_posts() ) {
+			// Product exists! Setup post data.
+			$query->the_post();
+
+			$last_verified_meta      = get_post_meta( $post->ID, '_last_verified_date_time', true );
+			$last_verified_date_time = new \DateTime( $last_verified_meta );
+
+			$import_last_verified_date_time = new \DateTime( $product->last_verified_date_time );
+
+			// Does this product need to be updated? Check verified dates, or force_update.
+			if ( $import_last_verified_date_time > $last_verified_date_time || $force_update ) {
+				// Update, setup postarr args.
+				$postarr       = $this->get_post_postarr( $product );
+				$postarr['ID'] = $post->ID;
+
+				// Setup meta_input.
+				$meta_input = $this->get_post_meta_input( $product );
+
+				// Update the post!
+				$post_id = wp_update_post( $postarr, true );
+
+				// Bail if error.
+				if ( is_wp_error( $post_id ) ) {
+					return $post_id;
+				}
+
+				// Update the meta_input!
+				if ( ! empty( $meta_input ) ) {
+					foreach ( $meta_input as $meta_key => $meta_value ) {
+						update_post_meta( $post_id, $meta_key, $meta_value );
+					}
+				}
+			} else {
+				// No update, set reference to post for assets, files, and taxonomy calls yet to come.
+				$update_skipped = true;
+				$post_id        = $post->ID;
+			}
+		} else {
+			// New post, setup postarr args.
+			$postarr = $this->get_post_postarr( $product );
+
+			// Insert post accepts meta_input directly.
+			$postarr['meta_input'] = $this->get_post_meta_input( $product );
+
+			// Insert the post!
+			$post_id = wp_insert_post( $postarr, true );
+
+			// Bail if error.
+			if ( is_wp_error( $post_id ) ) {
+				return $post_id;
+			}
+		}
+
+		// Sideload Primary Image.
+		$primary_image_id = $product->get_asset_value( edgenet()->settings->_primary_image );
+		if ( $primary_image_id ) {
+			$attachment_id = $this->sideload_image(
+				$primary_image_id,
+				$this->generate_asset_url( $primary_image_id ),
+				$post_id
+			);
+
+			if ( ! is_wp_error( $attachment_id ) ) {
+				update_post_meta( $post_id, '_thumbnail_id', $attachment_id );
+			}
+
+			unset( $attachment_id );
+		}
+
+		// Sideload Other Images.
+		$digital_assets_group_id = edgenet()->settings->_digital_assets;
+		if ( ! empty( $digital_assets_group_id ) ) {
+			$attachment_ids = $this->sideload_attribute_group( $digital_assets_group_id, $product, $post_id );
+
+			update_post_meta( $post_id, '_product_image_gallery', implode( ',', $attachment_ids ) );
+		}
+
+		// Set Product Categories.
+		$taxonomy_node_ids = $product->taxonomy_node_ids;
+		if ( ! empty( $taxonomy_node_ids ) ) {
+
+			// Iterate over taxonomy nodes until we find the right one.
+			foreach ( $taxonomy_node_ids as $taxonomy_node_id ) {
+				$taxonomy_path = edgenet()->api_adapter->taxonomynode_pathtoroot( $taxonomy_node_id );
+
+				// Bypass 'other' taxonomies. We're only interested in one.
+				if ( is_wp_error( $taxonomy_path ) || ! empty( $taxonomy_path ) && Edgenet::TAXONOMY_ID !== $taxonomy_path[0]->taxonomy_id ) {
+					continue;
+				}
+
+				$taxonomy_path = array_reverse( $taxonomy_path );
+				break;
+			}
+
+			if ( ! is_wp_error( $taxonomy_path ) && ! empty( $taxonomy_path ) ) {
+				$term_args              = [
+					'taxonomy'     => 'product_cat',
+					'hide_empty'   => false,
+					'meta_key'     => '_edgenet_id', /* phpcs:ignore */
+					'meta_compare' => 'EXISTS',
+				];
+				$product_cats           = get_terms( $term_args );
+				$product_cats_with_meta = array_map( function ( $product_cat ) {
+					$product_cat->_edgenet_id = get_term_meta( $product_cat->term_id, '_edgenet_id', true );
+
+					return $product_cat;
+				}, $product_cats );
+
+				foreach ( $taxonomy_path as $taxonomy_node ) {
+
+					$existing = array_filter( $product_cats_with_meta, function ( $product_cat ) use ( $taxonomy_node ) {
+						return $taxonomy_node->id === $product_cat->_edgenet_id;
+					} );
+
+					if ( ! $existing ) {
+						$parent = array_filter( $product_cats, function ( $product_cat ) use ( $taxonomy_node ) {
+							return $taxonomy_node->parent_id === $product_cat->_edgenet_id;
+						} );
+
+						if ( ! empty( $parent ) ) {
+							$parent = array_shift( $parent );
+						}
+
+						$term = wp_insert_term(
+							$taxonomy_node->description,
+							'product_cat',
+							[
+								'parent' => ( ! empty( $parent ) ) ? $parent->term_id : 0,
+							]
+						);
+
+						add_term_meta( $term['term_id'], '_edgenet_id', $taxonomy_node->id, true );
+						add_term_meta( $term['term_id'], '_edgenet_id_' . $taxonomy_node->id, $taxonomy_node->id, true );
+						add_term_meta( $term['term_id'], '_edgenet_parent_id', $taxonomy_node->parent_id, true );
+						add_term_meta( $term['term_id'], '_edgenet_taxonomy_id', $taxonomy_node->taxonomy_id, true );
+
+						// Refresh list of Product Categories after insert.
+						$product_cats           = get_terms( $term_args );
+						$product_cats_with_meta = array_map( function ( $product_cat ) {
+							$product_cat->_edgenet_id = get_term_meta( $product_cat->term_id, '_edgenet_id', true );
+
+							return $product_cat;
+						}, $product_cats );
+
+					}
+				}
+
+				$leaf_term = array_filter( $product_cats_with_meta, function ( $product_cat ) use ( $taxonomy_node ) {
+					return $product_cat->_edgenet_id === $taxonomy_node->id;
+				} );
+
+				if ( ! empty( $leaf_term ) ) {
+					$leaf_term = array_shift( $leaf_term );
+					wp_set_object_terms( $post_id, $leaf_term->term_id, 'product_cat' );
+				}
+			}
+		}
+
+	}
+
+	/**
+	 * Generate meta_input array for insert/update post.
+	 *
+	 * @param Product $product The Product.
+	 *
+	 * @return array Array of meta_input for wp_insert_post or wp_update_post.
+	 */
+	public function get_post_meta_input( $product ) {
+		// Setup meta_input to prep for insert or update.
+		$meta_input = [
+			'_edgenet_id'                 => $product->id,
+			'_edgenet_id_' . $product->id => $product->id,
+			'_last_verified_date_time'    => $product->last_verified_date_time,
+			'_is_verified'                => $product->is_verified,
+			'_archived'                   => $product->archived,
+			'_archived_metadata'          => $product->archived_metadata,
+			'_record_date'                => $product->record_date,
+			'_audit_info'                 => $product->audit_info,
+			'_gtin'                       => $product->get_attribute_value( edgenet()->settings->_gtin, '' ),
+			'_sku'                        => $product->get_attribute_value( edgenet()->settings->_sku, '' ),
+			'_regular_price'              => $product->get_attribute_value( edgenet()->settings->_regular_price, '' ),
+			'_price'                      => $product->get_attribute_value( edgenet()->settings->_regular_price, '' ),
+			'_weight'                     => $product->get_attribute_value( edgenet()->settings->_weight, '' ),
+			'_length'                     => $product->get_attribute_value( edgenet()->settings->_length, '' ),
+			'_width'                      => $product->get_attribute_value( edgenet()->settings->_width, '' ),
+			'_height'                     => $product->get_attribute_value( edgenet()->settings->_height, '' ),
+		];
+
+		// Grab all the Marketing attributes from this Product.
+		$marketing_group_id = edgenet()->settings->_marketing;
+		if ( ! empty( $marketing_group_id ) ) {
+			$marketing_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $marketing_group_id );
+
+			$meta_input['_marketing'] = $product->get_attributes_values( $marketing_attributes );
+		} else {
+			$meta_input['_marketing'] = [];
+		}
+
+		// Grab all the Specification attributes from this Product.
+//			$specifications_group_id = $this->settings->_specifications;
+//			if ( ! empty( $specifications_group_id ) ) {
+//				$specifications_attributes = $this->settings->requirement_set->get_attributes_by_group_id( $specifications_group_id );
+//
+//				$meta_input['_specifications'] = $product->get_attributes_values( $specifications_attributes );
+//			} else {
+//				$meta_input['_specifications'] = [];
+//			}
+
+		return $meta_input;
+	}
+
+	/**
+	 * Generate postarr args for insert/update post.
+	 *
+	 * @param Product $product The Product.
+	 *
+	 * @return array Array of args for wp_insert_post or wp_update_post.
+	 */
+	public function get_post_postarr( $product ) {
+		// Setup postarr to prep for insert or update.
+		$postarr = [
+			'post_author'  => edgenet()->settings->api['import_user'],
+			'post_title'   => $product->get_attribute_value( edgenet()->settings->post_title, '' ),
+			'post_content' => $product->get_attribute_value( edgenet()->settings->post_content, '' ),
+			'post_excerpt' => $product->get_attribute_value( edgenet()->settings->post_excerpt, '' ),
+			'post_status'  => 'publish',
+			'post_type'    => 'product',
+		];
+
+		return $postarr;
+	}
+
+	/**
+	 * Get the product IDs based on search parameters.
+	 *
+	 * @param array $search Search parameters.
+	 *
+	 * @return array|\WP_Error
+	 */
+	public function get_product_ids( $search = [] ) {
+
+		$iteration      = 0;
+		$max_iterations = 10;
+
+		$skip = 0;
+		$take = 100;
+
+		$ids = [];
+
+		do {
+			$iteration ++;
+			$results = edgenet()->api_adapter->productsearch( $search, $skip, $take );
+			if ( is_wp_error( $results ) ) {
+				$ids = $results;
+				break;
+			}
+			$ids   = array_merge( $ids, $results['Results'] );
+			$total = $results['TotalHitCount'];
+			$skip  = $skip + $results['ResultCount'];
+		} while ( $skip < $total && $iteration <= $max_iterations );
+
+		return $ids;
+	}
+
+	/**
+	 * Get a Product by Product ID.
+	 *
+	 * @param string $product_id The product ID.
+	 *
+	 * @return Item\Product|\WP_Error
+	 */
+	public function get_product( $product_id = '' ) {
+		$product = edgenet()->api_adapter->product( $product_id );
+
+		return $product;
+	}
+
+	/**
+	 * Generate an Asset's URL from ID
+	 *
+	 * @param string $asset_id  Asset ID.
+	 * @param string $file_type Options are [jpg, png].
+	 * @param int    $size      Define size of square in pixels that the image shall fit within.
+	 *
+	 * @return string The URL of the image on Edgenet.
+	 */
+	protected function generate_asset_url( $asset_id, $file_type = 'jpg', $size = 1200 ) {
+		$asset_url = sprintf(
+			'https://assets.edgenet.com/%s?fileType=%s&size=%d',
+			rawurlencode( $asset_id ),
+			rawurlencode( $file_type ),
+			absint( $size )
+		);
+
+		return $asset_url;
+	}
+
+	/**
+	 * Upload an image from an url, with support for filenames without an extension
+	 *
+	 * @link   http://wordpress.stackexchange.com/a/145349/26350
+	 *
+	 * @param  string $title   Attachment title.
+	 * @param  string $url     URL of image to import.
+	 * @param  int    $post_id Post ID to attach image to.
+	 *
+	 * @return int|\WP_Error $attachment_id The ID of the Attachment post or \WP_Error if failure.
+	 */
+	protected function sideload_image( $title, $url, $post_id = 0 ) {
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+
+		// Check if this image already exists.
+		$attachment = get_page_by_title( $title, OBJECT, 'attachment' );
+
+		// Found it? Return the ID.
+		if ( $attachment instanceof \WP_Post ) {
+			return $attachment->ID;
+		}
+
+		// Get the file extension for the image.
+		$file_ext = image_type_to_extension( exif_imagetype( $url ), false );
+
+		// Save as a temporary file.
+		$temp_file = download_url( $url );
+
+		// Check for download errors.
+		if ( is_wp_error( $temp_file ) ) {
+			return $temp_file;
+		}
+
+		// Get file path components.
+		$pathinfo = pathinfo( $temp_file );
+
+		// Rename with correct extension.
+		if ( $file_ext !== $pathinfo['extension'] ) {
+			$new_filepath = $pathinfo['dirname'] . DIRECTORY_SEPARATOR . $pathinfo['filename'] . '.' . $file_ext;
+
+			$success = rename( $temp_file, $new_filepath );
+
+			if ( ! $success ) {
+				return new \WP_Error(
+					'ussc-edgenet-file-error',
+					'Unable to rename temp file.',
+					[ $pathinfo, $new_filepath ]
+				);
+			}
+
+			$temp_file = $new_filepath;
+		}
+
+		// Upload the image into the WordPress Media Library.
+		$file_array = [
+			'name'     => $title . '.' . $file_ext,
+			'tmp_name' => $temp_file,
+		];
+
+		$id = media_handle_sideload( $file_array, $post_id );
+
+		// Check for sideload errors.
+		if ( is_wp_error( $id ) ) {
+			unlink( $file_array['tmp_name'] );
+		}
+
+		return $id;
+	}
+
+	/**
+	 * Bulk Sideload Assets by Attribute Group.
+	 *
+	 * @param string  $attribute_group_id The Attribute Group ID for Digital Assets.
+	 * @param Product $product            The Product.
+	 * @param int     $post_id            The Post ID.
+	 *
+	 * @return int[] Array of Attachment IDs sideloaded and attached to the post.
+	 */
+	protected function sideload_attribute_group( $attribute_group_id, $product, $post_id = 0 ) {
+		$product_image_ids = [];
+
+		$attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $attribute_group_id );
+
+		foreach ( $attributes as $attribute ) {
+			$attachment_id = null;
+
+			$asset_id = $product->get_asset_value( $attribute->id );
+			if ( ! empty( $asset_id ) ) {
+				$attachment_id = $this->sideload_image(
+					$asset_id,
+					$this->generate_asset_url( $asset_id ),
+					$post_id
+				);
+
+				if ( ! is_wp_error( $attachment_id ) ) {
+					$product_image_ids[] = $attachment_id;
+				}
+			}
+		}
+
+		return $product_image_ids;
+	}
+
+}
