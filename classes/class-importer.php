@@ -311,7 +311,6 @@ class Importer {
 	 */
 	public function get_post_meta_input( $product ) {
 		// Setup meta_input to prep for insert or update.
-		$price = $product->get_attribute_value( edgenet()->settings->_regular_price, '' );
 		$meta_input = [
 			'_edgenet_id'                 => $product->id,
 			'_edgenet_id_' . $product->id => $product->id,
