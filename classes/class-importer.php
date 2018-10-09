@@ -311,6 +311,7 @@ class Importer {
 	 */
 	public function get_post_meta_input( $product ) {
 		// Setup meta_input to prep for insert or update.
+		$price = $product->get_attribute_value( edgenet()->settings->_regular_price, '' );
 		$meta_input = [
 			'_edgenet_id'                 => $product->id,
 			'_edgenet_id_' . $product->id => $product->id,
@@ -322,12 +323,12 @@ class Importer {
 			'_audit_info'                 => $product->audit_info,
 			'_gtin'                       => $product->get_attribute_value( edgenet()->settings->_gtin, '' ),
 			'_sku'                        => $product->get_attribute_value( edgenet()->settings->_sku, '' ),
-			'_regular_price'              => $product->get_attribute_value( edgenet()->settings->_regular_price, '' ),
-			'_price'                      => $product->get_attribute_value( edgenet()->settings->_regular_price, '' ),
-			'_weight'                     => $product->get_attribute_value( edgenet()->settings->_weight, '' ),
-			'_length'                     => $product->get_attribute_value( edgenet()->settings->_length, '' ),
-			'_width'                      => $product->get_attribute_value( edgenet()->settings->_width, '' ),
-			'_height'                     => $product->get_attribute_value( edgenet()->settings->_height, '' ),
+			'_regular_price'              => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ) ),
+			'_price'                      => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ) ),
+			'_weight'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_weight, '' ) ) ),
+			'_length'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_length, '' ) ) ),
+			'_width'                      => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_width, '' ) ) ),
+			'_height'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_height, '' ) ) ),
 		];
 
 		// Grab all the Marketing attributes from this Product.
