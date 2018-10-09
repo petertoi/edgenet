@@ -267,10 +267,7 @@ class API_Adapter {
 			'api/search/productsearch/'
 		);
 
-		$data = [
-			'DataOwner'           => Edgenet::DATA_OWNER,
-			'ProductSearchFilter' => $product_search_filter,
-		];
+		$data = $product_search_filter;
 
 		$response = $this->post( $path, $data );
 

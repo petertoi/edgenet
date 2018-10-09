@@ -84,8 +84,8 @@ class Importer {
 		if ( empty( $product_ids ) ) {
 			set_transient( self::IMPORTER_ACTIVE_TRANSIENT, true, MINUTE_IN_SECONDS * 5 );
 			$product_ids = $this->get_product_ids( [
-				'Archived'                 => false,
 				'DataOwner'                => Edgenet::DATA_OWNER,
+				'Archived'                 => false,
 				'Desc'                     => false,
 				'Recipients'               => [ 'c964a170-12e7-4e70-bc72-11016d97864f' ],
 				'SubscriptionStatusFilter' => 'All',
