@@ -192,6 +192,20 @@ use USSC_Edgenet\Template;
 				);
 
 				/**
+				 * Model No
+				 */
+				echo Template::render_admin_table_row(
+					__( 'Model No', 'ussc' ),
+					Template::render_select(
+						'edgenet_settings[field_map][postmeta][_model_no]',
+						'_model_no',
+						edgenet()->settings->get_attributes_for_select(),
+						edgenet()->settings->_model_no,
+						[]
+					)
+				);
+
+				/**
 				 * Regular Price
 				 */
 				echo Template::render_admin_table_row(

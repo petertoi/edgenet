@@ -8,7 +8,6 @@
 
 namespace USSC_Edgenet;
 
-use USSC_Edgenet\Item\Attribute;
 use USSC_Edgenet\Item\Attribute_Group;
 use USSC_Edgenet\Item\Product;
 
@@ -63,8 +62,8 @@ class Importer {
 	/**
 	 * Import a set of Products
 	 *
-	 * @param array $product_ids  Specific Product ID(s) to import. Leave null for all products.
-	 * @param bool  $force_update Force update products regardless of verified date.
+	 * @param array $product_ids Specific Product ID(s) to import. Leave null for all products.
+	 * @param bool $force_update Force update products regardless of verified date.
 	 *
 	 * @return array Array of Product IDs and import status.
 	 */
@@ -109,7 +108,7 @@ class Importer {
 	/**
 	 * Import a single Product
 	 *
-	 * @param int  $product_id   The product ID to import.
+	 * @param int $product_id The product ID to import.
 	 * @param bool $force_update Whether to force import/update data regardless of verified_date.
 	 *
 	 * @return int|\WP_Error The Post ID on success or \WP_Error if failure.
@@ -172,6 +171,21 @@ class Importer {
 						update_post_meta( $post_id, $meta_key, $meta_value );
 					}
 				}
+
+				// Sideload Other Images.
+				$digital_assets_group_id = edgenet()->settings->_digital_assets;
+				$attachment_ids          = $this->update_image_gallery( $digital_assets_group_id, $product, $post_id );
+
+
+				// Set Product Categories.
+				$taxonomy_node_ids = $product->taxonomy_node_ids;
+				$this->update_tax( $taxonomy_node_ids, $post_id );
+
+				// get the documents
+				$document_node_ids = edgenet()->settings->_documents;
+				$document_ids      = $this->update_documents( $document_node_ids, $product, $post_id );
+
+
 			} else {
 				// No update, set reference to post for assets, files, and taxonomy calls yet to come.
 				$update_skipped = true;
@@ -211,94 +225,11 @@ class Importer {
 
 		// Sideload Other Images.
 		$digital_assets_group_id = edgenet()->settings->_digital_assets;
-		if ( ! empty( $digital_assets_group_id ) ) {
-			$attachment_ids = $this->sideload_attribute_group( $digital_assets_group_id, $product, $post_id );
-
-			update_post_meta( $post_id, '_product_image_gallery', implode( ',', $attachment_ids ) );
-		}
+		$attachment_ids          = $this->update_image_gallery( $digital_assets_group_id, $product, $post_id );
 
 		// Set Product Categories.
 		$taxonomy_node_ids = $product->taxonomy_node_ids;
-		if ( ! empty( $taxonomy_node_ids ) ) {
-
-			// Iterate over taxonomy nodes until we find the right one.
-			foreach ( $taxonomy_node_ids as $taxonomy_node_id ) {
-				$taxonomy_path = edgenet()->api_adapter->taxonomynode_pathtoroot( $taxonomy_node_id );
-
-				// Bypass 'other' taxonomies. We're only interested in one.
-				if ( is_wp_error( $taxonomy_path ) || ! empty( $taxonomy_path ) && Edgenet::TAXONOMY_ID !== $taxonomy_path[0]->taxonomy_id ) {
-					continue;
-				}
-
-				$taxonomy_path = array_reverse( $taxonomy_path );
-				break;
-			}
-
-			if ( ! is_wp_error( $taxonomy_path ) && ! empty( $taxonomy_path ) ) {
-				$term_args              = [
-					'taxonomy'     => 'product_cat',
-					'hide_empty'   => false,
-					'meta_key'     => '_edgenet_id', /* phpcs:ignore */
-					'meta_compare' => 'EXISTS',
-				];
-				$product_cats           = get_terms( $term_args );
-				$product_cats_with_meta = array_map( function ( $product_cat ) {
-					$product_cat->_edgenet_id = get_term_meta( $product_cat->term_id, '_edgenet_id', true );
-
-					return $product_cat;
-				}, $product_cats );
-
-				foreach ( $taxonomy_path as $taxonomy_node ) {
-
-					$existing = array_filter( $product_cats_with_meta, function ( $product_cat ) use ( $taxonomy_node ) {
-						return $taxonomy_node->id === $product_cat->_edgenet_id;
-					} );
-
-					if ( ! $existing ) {
-						$parent = array_filter( $product_cats, function ( $product_cat ) use ( $taxonomy_node ) {
-							return $taxonomy_node->parent_id === $product_cat->_edgenet_id;
-						} );
-
-						if ( ! empty( $parent ) ) {
-							$parent = array_shift( $parent );
-						}
-
-						$term = wp_insert_term(
-							$taxonomy_node->description,
-							'product_cat',
-							[
-								'parent' => ( ! empty( $parent ) ) ? $parent->term_id : 0,
-							]
-						);
-
-						if ( ! is_wp_error( $term ) ) {
-							add_term_meta( $term['term_id'], '_edgenet_id', $taxonomy_node->id, true );
-							add_term_meta( $term['term_id'], '_edgenet_id_' . $taxonomy_node->id, $taxonomy_node->id, true );
-							add_term_meta( $term['term_id'], '_edgenet_parent_id', $taxonomy_node->parent_id, true );
-							add_term_meta( $term['term_id'], '_edgenet_taxonomy_id', $taxonomy_node->taxonomy_id, true );
-						}
-
-						// Refresh list of Product Categories after insert.
-						$product_cats           = get_terms( $term_args );
-						$product_cats_with_meta = array_map( function ( $product_cat ) {
-							$product_cat->_edgenet_id = get_term_meta( $product_cat->term_id, '_edgenet_id', true );
-
-							return $product_cat;
-						}, $product_cats );
-
-					}
-				}
-
-				$leaf_term = array_filter( $product_cats_with_meta, function ( $product_cat ) use ( $taxonomy_node ) {
-					return $product_cat->_edgenet_id === $taxonomy_node->id;
-				} );
-
-				if ( ! empty( $leaf_term ) ) {
-					$leaf_term = array_shift( $leaf_term );
-					wp_set_object_terms( $post_id, $leaf_term->term_id, 'product_cat' );
-				}
-			}
-		}
+		$this->update_tax( $taxonomy_node_ids, $post_id );
 
 	}
 
@@ -322,6 +253,7 @@ class Importer {
 			'_audit_info'                 => $product->audit_info,
 			'_gtin'                       => $product->get_attribute_value( edgenet()->settings->_gtin, '' ),
 			'_sku'                        => $product->get_attribute_value( edgenet()->settings->_sku, '' ),
+			'_model_no'                   => $product->get_attribute_value( edgenet()->settings->_model_no, '' ),
 			'_regular_price'              => floatval( $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ),
 			'_price'                      => floatval( $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ),
 			'_weight'                     => floatval( $product->get_attribute_value( edgenet()->settings->_weight, '' ) ),
@@ -422,19 +354,21 @@ class Importer {
 	/**
 	 * Generate an Asset's URL from ID
 	 *
-	 * @param string $asset_id  Asset ID.
+	 * @param string $asset_id Asset ID.
 	 * @param string $file_type Options are [jpg, png].
-	 * @param int    $size      Define size of square in pixels that the image shall fit within.
+	 * @param int $size Define size of square in pixels that the image shall fit within.
 	 *
 	 * @return string The URL of the image on Edgenet.
 	 */
 	protected function generate_asset_url( $asset_id, $file_type = 'jpg', $size = 1200 ) {
+
 		$asset_url = sprintf(
-			'https://assets.edgenet.com/%s?fileType=%s&size=%d',
-			rawurlencode( $asset_id ),
-			rawurlencode( $file_type ),
-			absint( $size )
-		);
+			'https://assets.edgenet.com/%s', rawurlencode( $asset_id ) );
+
+		$asset_url = add_query_arg( [
+			'fileType' => $file_type,
+			'size'     => $size
+		], $asset_url );
 
 		return $asset_url;
 	}
@@ -444,9 +378,9 @@ class Importer {
 	 *
 	 * @link   http://wordpress.stackexchange.com/a/145349/26350
 	 *
-	 * @param  string $title   Attachment title.
-	 * @param  string $url     URL of image to import.
-	 * @param  int    $post_id Post ID to attach image to.
+	 * @param  string $title Attachment title.
+	 * @param  string $url URL of image to import.
+	 * @param  int $post_id Post ID to attach image to.
 	 *
 	 * @return int|\WP_Error $attachment_id The ID of the Attachment post or \WP_Error if failure.
 	 */
@@ -463,8 +397,13 @@ class Importer {
 			return $attachment->ID;
 		}
 
-		// Get the file extension for the image.
-		$file_ext = image_type_to_extension( exif_imagetype( $url ), false );
+		if ( strpos( $url, 'fileType=pdf' ) ) {
+			$file_ext = 'pdf';
+		} else {
+			// Get the file extension for the image.
+			$file_ext = image_type_to_extension( exif_imagetype( $url ), false );
+		}
+
 
 		// Save as a temporary file.
 		$temp_file = download_url( $url );
@@ -513,9 +452,9 @@ class Importer {
 	/**
 	 * Bulk Sideload Assets by Attribute Group.
 	 *
-	 * @param string  $attribute_group_id The Attribute Group ID for Digital Assets.
-	 * @param Product $product            The Product.
-	 * @param int     $post_id            The Post ID.
+	 * @param string $attribute_group_id The Attribute Group ID for Digital Assets.
+	 * @param Product $product The Product.
+	 * @param int $post_id The Post ID.
 	 *
 	 * @return int[] Array of Attachment IDs sideloaded and attached to the post.
 	 */
@@ -525,23 +464,251 @@ class Importer {
 		$attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $attribute_group_id );
 
 		foreach ( $attributes as $attribute ) {
+
+
 			$attachment_id = null;
 
 			$asset_id = $product->get_asset_value( $attribute->id );
 			if ( ! empty( $asset_id ) ) {
-				$attachment_id = $this->sideload_image(
-					$asset_id,
-					$this->generate_asset_url( $asset_id ),
-					$post_id
-				);
+				// check for image before downloading
+				$posts = get_page_by_title( $asset_id, 'OBJECT', 'attachment' );
+				if ( null === $posts ) {
+					$attachment_id = $this->sideload_image(
+						$asset_id,
+						$this->generate_asset_url( $asset_id ),
+						$post_id
+					);
 
-				if ( ! is_wp_error( $attachment_id ) ) {
-					$product_image_ids[] = $attachment_id;
+					if ( ! is_wp_error( $attachment_id ) ) {
+						$product_image_ids[] = $attachment_id;
+					}
+				} else {
+					$product_image_ids[] = $posts->ID;
 				}
 			}
 		}
 
 		return $product_image_ids;
+	}
+
+	/**
+	 *
+	 *
+	 * @param $taxonomy_node_ids
+	 * @param $post_id
+	 */
+	public function update_tax( $taxonomy_node_ids, $post_id ): void {
+		if ( ! empty( $taxonomy_node_ids ) ) {
+
+			// Iterate over taxonomy nodes until we find the right one.
+			foreach ( $taxonomy_node_ids as $taxonomy_node_id ) {
+				$taxonomy_path = edgenet()->api_adapter->taxonomynode_pathtoroot( $taxonomy_node_id );
+
+				// Bypass 'other' taxonomies. We're only interested in one.
+				if ( is_wp_error( $taxonomy_path ) || ! empty( $taxonomy_path ) && Edgenet::TAXONOMY_ID !== $taxonomy_path[0]->taxonomy_id ) {
+					continue;
+				}
+
+				$taxonomy_path = array_reverse( $taxonomy_path );
+				break;
+			}
+
+			if ( ! is_wp_error( $taxonomy_path ) && ! empty( $taxonomy_path ) ) {
+				$term_args              = [
+					'taxonomy'     => 'product_cat',
+					'hide_empty'   => false,
+					'meta_key'     => '_edgenet_id', /* phpcs:ignore */
+					'meta_compare' => 'EXISTS',
+				];
+				$product_cats           = get_terms( $term_args );
+				$product_cats_with_meta = array_map( function ( $product_cat ) {
+					$product_cat->_edgenet_id = get_term_meta( $product_cat->term_id, '_edgenet_id', true );
+
+					return $product_cat;
+				}, $product_cats );
+
+				foreach ( $taxonomy_path as $taxonomy_node ) {
+
+					$existing = array_filter( $product_cats_with_meta, function ( $product_cat ) use ( $taxonomy_node ) {
+						return $taxonomy_node->id === $product_cat->_edgenet_id;
+					} );
+
+					if ( ! $existing ) {
+						$parent = array_filter( $product_cats, function ( $product_cat ) use ( $taxonomy_node ) {
+							return $taxonomy_node->parent_id === $product_cat->_edgenet_id;
+						} );
+
+						if ( ! empty( $parent ) ) {
+							$parent = array_shift( $parent );
+						}
+
+						$term = wp_insert_term(
+							$taxonomy_node->description,
+							'product_cat',
+							[
+								'parent' => ( ! empty( $parent ) ) ? $parent->term_id : 0,
+							]
+						);
+
+						if ( ! is_wp_error( $term ) ) {
+							add_term_meta( $term['term_id'], '_edgenet_id', $taxonomy_node->id, true );
+							add_term_meta( $term['term_id'], '_edgenet_id_' . $taxonomy_node->id, $taxonomy_node->id, true );
+							add_term_meta( $term['term_id'], '_edgenet_parent_id', $taxonomy_node->parent_id, true );
+							add_term_meta( $term['term_id'], '_edgenet_taxonomy_id', $taxonomy_node->taxonomy_id, true );
+						}
+
+						// Refresh list of Product Categories after insert.
+						$product_cats           = get_terms( $term_args );
+						$product_cats_with_meta = array_map( function ( $product_cat ) {
+							$product_cat->_edgenet_id = get_term_meta( $product_cat->term_id, '_edgenet_id', true );
+
+							return $product_cat;
+						}, $product_cats );
+
+					}
+				}
+
+				$leaf_term = array_filter( $product_cats_with_meta, function ( $product_cat ) use ( $taxonomy_node ) {
+					return $product_cat->_edgenet_id === $taxonomy_node->id;
+				} );
+
+				if ( ! empty( $leaf_term ) ) {
+					$leaf_term = array_shift( $leaf_term );
+					wp_set_object_terms( $post_id, $leaf_term->term_id, 'product_cat' );
+				}
+			}
+		}
+	}
+
+	/**
+	 *
+	 *
+	 * @param $digital_assets_group_id
+	 * @param $product
+	 * @param $post_id
+	 *
+	 * @return int[]
+	 */
+	public function update_image_gallery( $digital_assets_group_id, $product, $post_id ) {
+		if ( ! empty( $digital_assets_group_id ) ) {
+			$attachment_ids = $this->sideload_attribute_group( $digital_assets_group_id, $product, $post_id );
+
+			update_post_meta( $post_id, '_product_image_gallery', implode( ',', $attachment_ids ) );
+		}
+
+		return $attachment_ids;
+	}
+
+	/**
+	 *
+	 *
+	 * @param $digital_assets_group_id
+	 * @param $product
+	 * @param $post_id
+	 *
+	 * @return int[]
+	 */
+	public function update_documents( $document_node_ids, $product, $post_id ): int {
+		$document_id = 0;
+
+		$attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $document_node_ids );
+
+		foreach ( $attributes as $attribute ) {
+
+			$attachment_id = null;
+
+			$asset_id = $product->get_asset_value( $attribute->id );
+			if ( ! empty( $asset_id ) ) {
+				// check for media file before downloading
+				$post = get_page_by_title( $asset_id, 'OBJECT', 'attachment' );
+				if ( null === $post ) {
+					$attachment_id = $this->sideload_image(
+						$asset_id,
+						$this->generate_asset_url( $asset_id, 'pdf', null ),
+						$post_id
+					);
+
+					if ( ! is_wp_error( $attachment_id ) ) {
+
+					}
+
+				} else {
+					$attachment_id = $post->ID;
+				}
+
+				$post_vars = [
+					'post_author' => edgenet()->settings->api['import_user'],
+					'post_title'  => $product->get_attribute_value( edgenet()->settings->_model_no, '' ) . ' : ' . $attribute->description,
+					'post_status' => 'publish',
+					'post_type'   => 'document',
+				];
+
+
+				// Setup WP_Query args to check if this product already exists.
+				// @see https://vip.wordpress.com/documentation/querying-on-meta_value/ for info on this query.
+				$args = [
+					'meta_key'     => '_edgenet_id_' . $asset_id, /* phpcs:ignore */
+					'meta_compare' => 'EXISTS',
+					'post_type'    => 'document',
+				];
+
+				// Run the WP_Query.
+				$query = new \WP_Query( $args );
+
+				if ( $query->have_posts() ) {
+					// Product exists! Setup post data.
+					$query->the_post();
+
+					$post_vars['ID'] = $query->post->ID;
+
+					$document_id = wp_update_post( $post_vars );
+
+					update_post_meta( $document_id, '_edgenet_linked_document_id', $attachment_id );
+
+					$this->set_post_term( $document_id, $attribute->description, 'doc_type' );
+
+				} else {
+					$post_vars['meta_input'] = [
+						'_edgenet_id_' . $asset_id    => $asset_id,
+						'_edgenet_linked_document_id' => $attachment_id,
+					];
+
+					$document_id = wp_insert_post( $post_vars );
+
+					$this->set_post_term( $document_id, $attribute->description, 'doc_type' );
+				}
+
+			}
+		}
+
+		return $document_id;
+	}
+
+	/**
+	 * set specified taxonomy term to the incoming post object. If
+	 * the term doesn't already exist in the database, it will be created.
+	 *
+	 * @param    WP_Post $post The post to which we're adding the taxonomy term.
+	 * @param    string $value The name of the taxonomy term
+	 * @param    string $taxonomy The name of the taxonomy.
+	 *
+	 * @access   private
+	 * @since    1.0.0
+	 */
+	private function set_post_term( $post_id, $value, $taxonomy ) {
+		$term = term_exists( $value, $taxonomy );
+		// If the taxonomy doesn't exist, then we create it
+		if ( 0 === $term || null === $term ) {
+			$term = wp_insert_term(
+				$value,
+				$taxonomy,
+				array(
+					'slug' => strtolower( str_ireplace( ' ', '-', $value ) )
+				)
+			);
+		}
+		// Then we can set the taxonomy
+		wp_set_post_terms( $post_id, $term, $taxonomy );
 	}
 
 }

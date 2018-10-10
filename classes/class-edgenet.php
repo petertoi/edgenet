@@ -92,6 +92,7 @@ class Edgenet {
 		);
 
 		$this->importer = new Importer();
+		$this->documents = new Documents();
 
 		// Init admin.
 		add_action( 'plugins_loaded', [ $this, 'admin_init' ], 10 );

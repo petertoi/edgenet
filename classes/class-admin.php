@@ -51,7 +51,7 @@ class Admin {
 					wp_schedule_single_event( time(), 'edgenet_sync_now' );
 				}
 			} else {
-				edgenet()->import_products( [ $_REQUEST['sync'] ], true );
+				edgenet()->importer->import_products( [ $_REQUEST['sync'] ], true );
 			}
 		}
 		if ( ! isset( $_REQUEST['page'] ) || 'ussc-edgenet' !== $_REQUEST['page'] ) { // phpcs:ignore
@@ -103,6 +103,7 @@ class Admin {
 			$postmeta_filter = [
 				'_gtin'           => [ 'filter' => FILTER_SANITIZE_STRING ],
 				'_sku'            => [ 'filter' => FILTER_SANITIZE_STRING ],
+				'_model_no'       => [ 'filter' => FILTER_SANITIZE_STRING ],
 				'_regular_price'  => [ 'filter' => FILTER_SANITIZE_STRING ],
 				'_weight'         => [ 'filter' => FILTER_SANITIZE_STRING ],
 				'_length'         => [ 'filter' => FILTER_SANITIZE_STRING ],
