@@ -29,6 +29,11 @@ class Document {
 	const REWRITE = 'document';
 
 	/**
+	 * WP Attachment ID.
+	 */
+	const META_ATTACHMENT_ID = '_edgenet_wp_attachment_id';
+
+	/**
 	 * Document constructor.
 	 */
 	public function __construct() {

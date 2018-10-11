@@ -8,8 +8,11 @@
 
 namespace USSC_Edgenet;
 
+use USSC_Edgenet\Item\Attribute;
 use USSC_Edgenet\Item\Attribute_Group;
 use USSC_Edgenet\Item\Product;
+use USSC_Edgenet\Post_Types\Document;
+use USSC_Edgenet\Taxonomies\Doc_Type;
 
 class Importer {
 
@@ -18,7 +21,8 @@ class Importer {
 	/**
 	 * Importer constructor.
 	 */
-	public function __construct() {}
+	public function __construct() {
+	}
 
 	/**
 	 * Update Edgenet Distribution Requirement Set configuration.
@@ -61,8 +65,8 @@ class Importer {
 	/**
 	 * Import a set of Products
 	 *
-	 * @param array $product_ids Specific Product ID(s) to import. Leave null for all products.
-	 * @param bool $force_update Force update products regardless of verified date.
+	 * @param array $product_ids  Specific Product ID(s) to import. Leave null for all products.
+	 * @param bool  $force_update Force update products regardless of verified date.
 	 *
 	 * @return array Array of Product IDs and import status.
 	 */
@@ -107,7 +111,7 @@ class Importer {
 	/**
 	 * Import a single Product
 	 *
-	 * @param int $product_id The product ID to import.
+	 * @param int  $product_id   The product ID to import.
 	 * @param bool $force_update Whether to force import/update data regardless of verified_date.
 	 *
 	 * @return int|\WP_Error The Post ID on success or \WP_Error if failure.
@@ -170,21 +174,6 @@ class Importer {
 						update_post_meta( $post_id, $meta_key, $meta_value );
 					}
 				}
-
-				// Sideload Other Images.
-				$digital_assets_group_id = edgenet()->settings->_digital_assets;
-				$attachment_ids          = $this->update_image_gallery( $digital_assets_group_id, $product, $post_id );
-
-
-				// Set Product Categories.
-				$taxonomy_node_ids = $product->taxonomy_node_ids;
-				$this->update_tax( $taxonomy_node_ids, $post_id );
-
-				// get the documents
-				$document_node_ids = edgenet()->settings->_documents;
-				$document_ids      = $this->update_documents( $document_node_ids, $product, $post_id );
-
-
 			} else {
 				// No update, set reference to post for assets, files, and taxonomy calls yet to come.
 				$update_skipped = true;
@@ -209,10 +198,11 @@ class Importer {
 		// Sideload Primary Image.
 		$primary_image_id = $product->get_asset_value( edgenet()->settings->_primary_image );
 		if ( $primary_image_id ) {
-			$attachment_id = $this->sideload_image(
+			$attachment_id = $this->sideload_attachment(
 				$primary_image_id,
-				$this->generate_asset_url( $primary_image_id ),
-				$post_id
+				$this->generate_edgenet_image_url( $primary_image_id, 'jpg' ),
+				$post_id,
+				'jpg'
 			);
 
 			if ( ! is_wp_error( $attachment_id ) ) {
@@ -224,12 +214,15 @@ class Importer {
 
 		// Sideload Other Images.
 		$digital_assets_group_id = edgenet()->settings->_digital_assets;
-		$attachment_ids          = $this->update_image_gallery( $digital_assets_group_id, $product, $post_id );
+		$attachment_ids          = $this->update_digital_assets( $digital_assets_group_id, $product, $post_id );
+
+		// Sideload Documents.
+		$document_node_ids = edgenet()->settings->_documents;
+		$document_ids      = $this->update_documents( $document_node_ids, $product, $post_id );
 
 		// Set Product Categories.
 		$taxonomy_node_ids = $product->taxonomy_node_ids;
-		$this->update_tax( $taxonomy_node_ids, $post_id );
-
+		$this->update_taxonomy( $taxonomy_node_ids, $post_id );
 	}
 
 	/**
@@ -239,7 +232,7 @@ class Importer {
 	 *
 	 * @return array Array of meta_input for wp_insert_post or wp_update_post.
 	 */
-	public function get_post_meta_input( $product ) {
+	private function get_post_meta_input( $product ) {
 		// Setup meta_input to prep for insert or update.
 		$meta_input = [
 			'_edgenet_id'                 => $product->id,
@@ -291,7 +284,7 @@ class Importer {
 	 *
 	 * @return array Array of args for wp_insert_post or wp_update_post.
 	 */
-	public function get_post_postarr( $product ) {
+	private function get_post_postarr( $product ) {
 		// Setup postarr to prep for insert or update.
 		$postarr = [
 			'post_author'  => edgenet()->settings->api['import_user'],
@@ -312,7 +305,7 @@ class Importer {
 	 *
 	 * @return array|\WP_Error
 	 */
-	public function get_product_ids( $search = [] ) {
+	private function get_product_ids( $search = [] ) {
 
 		$iteration      = 0;
 		$max_iterations = 10;
@@ -344,46 +337,70 @@ class Importer {
 	 *
 	 * @return Item\Product|\WP_Error
 	 */
-	public function get_product( $product_id = '' ) {
+	private function get_product( $product_id = '' ) {
 		$product = edgenet()->api_adapter->product( $product_id );
 
 		return $product;
 	}
 
 	/**
-	 * Generate an Asset's URL from ID
+	 * Generate an Edgenet Image URL from Asset ID
 	 *
-	 * @param string $asset_id Asset ID.
+	 * @param string $asset_id  Asset ID.
 	 * @param string $file_type Options are [jpg, png].
-	 * @param int $size Define size of square in pixels that the image shall fit within.
+	 * @param int    $size      Define size of square in pixels that the image shall fit within.
 	 *
 	 * @return string The URL of the image on Edgenet.
 	 */
-	protected function generate_asset_url( $asset_id, $file_type = 'jpg', $size = 1200 ) {
+	private function generate_edgenet_image_url( $asset_id, $file_type = 'jpg', $size = 1200 ) {
 
 		$asset_url = sprintf(
-			'https://assets.edgenet.com/%s', rawurlencode( $asset_id ) );
+			'https://assets.edgenet.com/%s',
+			rawurlencode( $asset_id )
+		);
 
 		$asset_url = add_query_arg( [
 			'fileType' => $file_type,
-			'size'     => $size
+			'size'     => $size,
 		], $asset_url );
 
 		return $asset_url;
 	}
 
 	/**
-	 * Upload an image from an url, with support for filenames without an extension
+	 * Generate an Edgenet Document (PDF) URL from Asset ID
+	 *
+	 * @param string $asset_id Asset ID.
+	 *
+	 * @return string The URL of the Document (PDF) on Edgenet.
+	 */
+	private function generate_edgenet_document_url( $asset_id ) {
+
+		$asset_url = sprintf(
+			'https://assets.edgenet.com/%s',
+			rawurlencode( $asset_id )
+		);
+
+		$asset_url = add_query_arg( [
+			'fileType' => 'pdf',
+		], $asset_url );
+
+		return $asset_url;
+	}
+
+	/**
+	 * Sideload Asset by URL.
 	 *
 	 * @link   http://wordpress.stackexchange.com/a/145349/26350
 	 *
-	 * @param  string $title Attachment title.
-	 * @param  string $url URL of image to import.
-	 * @param  int $post_id Post ID to attach image to.
+	 * @param  string $title    Attachment title.
+	 * @param  string $url      URL of image to import.
+	 * @param  string $file_ext The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
+	 * @param  int    $post_id  Post ID to attach image to.
 	 *
 	 * @return int|\WP_Error $attachment_id The ID of the Attachment post or \WP_Error if failure.
 	 */
-	protected function sideload_image( $title, $url, $post_id = 0 ) {
+	private function sideload_attachment( $title, $url, $post_id = 0, $file_ext = '' ) {
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/media.php';
@@ -396,13 +413,13 @@ class Importer {
 			return $attachment->ID;
 		}
 
-		if ( strpos( $url, 'fileType=pdf' ) ) {
-			$file_ext = 'pdf';
-		} else {
-			// Get the file extension for the image.
-			$file_ext = image_type_to_extension( exif_imagetype( $url ), false );
+		if ( empty( $file_ext ) ) {
+			// Get the file extension for the image, without dot.
+			$file_ext = image_type_to_extension(
+				exif_imagetype( $url ),
+				false
+			);
 		}
-
 
 		// Save as a temporary file.
 		$temp_file = download_url( $url );
@@ -432,7 +449,7 @@ class Importer {
 			$temp_file = $new_filepath;
 		}
 
-		// Upload the image into the WordPress Media Library.
+		// Upload the attachment into the WordPress Media Library.
 		$file_array = [
 			'name'     => $title . '.' . $file_ext,
 			'tmp_name' => $temp_file,
@@ -451,38 +468,32 @@ class Importer {
 	/**
 	 * Bulk Sideload Assets by Attribute Group.
 	 *
-	 * @param string $attribute_group_id The Attribute Group ID for Digital Assets.
-	 * @param Product $product The Product.
-	 * @param int $post_id The Post ID.
+	 * @param string  $attribute_group_id The Attribute Group ID for Digital Assets.
+	 * @param Product $product            The Product.
+	 * @param int     $post_id            The Post ID.
 	 *
 	 * @return int[] Array of Attachment IDs sideloaded and attached to the post.
 	 */
-	protected function sideload_attribute_group( $attribute_group_id, $product, $post_id = 0 ) {
+	private function sideload_attribute_group( $attribute_group_id, $product, $post_id = 0, $file_ext = '' ) {
 		$product_image_ids = [];
 
 		$attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $attribute_group_id );
 
 		foreach ( $attributes as $attribute ) {
-
-
-			$attachment_id = null;
-
 			$asset_id = $product->get_asset_value( $attribute->id );
-			if ( ! empty( $asset_id ) ) {
-				// check for image before downloading
-				$posts = get_page_by_title( $asset_id, 'OBJECT', 'attachment' );
-				if ( null === $posts ) {
-					$attachment_id = $this->sideload_image(
-						$asset_id,
-						$this->generate_asset_url( $asset_id ),
-						$post_id
-					);
 
-					if ( ! is_wp_error( $attachment_id ) ) {
-						$product_image_ids[] = $attachment_id;
-					}
-				} else {
-					$product_image_ids[] = $posts->ID;
+			if ( ! empty( $asset_id ) ) {
+				$attachment_id = $this->sideload_attachment(
+					$asset_id,
+					( 'pdf' === $file_ext )
+						? $this->generate_edgenet_document_url( $asset_id )
+						: $this->generate_edgenet_image_url( $asset_id ),
+					$file_ext,
+					$post_id
+				);
+
+				if ( ! is_wp_error( $attachment_id ) ) {
+					$product_image_ids[] = $attachment_id;
 				}
 			}
 		}
@@ -491,12 +502,13 @@ class Importer {
 	}
 
 	/**
+	 * Assign Edgenet Taxonomy Term to Post
+	 * Generates Edgenet Taxonomy Term heirarchy from Taxonomy_Node[] if it doesn't already exist.
 	 *
-	 *
-	 * @param $taxonomy_node_ids
-	 * @param $post_id
+	 * @param string[] $taxonomy_node_ids Array of Taxonomy Node Ids.
+	 * @param int      $post_id           The Product's \WP_Post id.
 	 */
-	public function update_tax( $taxonomy_node_ids, $post_id ): void {
+	private function update_taxonomy( $taxonomy_node_ids, $post_id ) {
 		if ( ! empty( $taxonomy_node_ids ) ) {
 
 			// Iterate over taxonomy nodes until we find the right one.
@@ -513,13 +525,16 @@ class Importer {
 			}
 
 			if ( ! is_wp_error( $taxonomy_path ) && ! empty( $taxonomy_path ) ) {
-				$term_args              = [
+
+				$term_args = [
 					'taxonomy'     => 'product_cat',
 					'hide_empty'   => false,
 					'meta_key'     => '_edgenet_id', /* phpcs:ignore */
 					'meta_compare' => 'EXISTS',
 				];
-				$product_cats           = get_terms( $term_args );
+
+				$product_cats = get_terms( $term_args );
+
 				$product_cats_with_meta = array_map( function ( $product_cat ) {
 					$product_cat->_edgenet_id = get_term_meta( $product_cat->term_id, '_edgenet_id', true );
 
@@ -550,14 +565,17 @@ class Importer {
 						);
 
 						if ( ! is_wp_error( $term ) ) {
+
 							add_term_meta( $term['term_id'], '_edgenet_id', $taxonomy_node->id, true );
 							add_term_meta( $term['term_id'], '_edgenet_id_' . $taxonomy_node->id, $taxonomy_node->id, true );
 							add_term_meta( $term['term_id'], '_edgenet_parent_id', $taxonomy_node->parent_id, true );
 							add_term_meta( $term['term_id'], '_edgenet_taxonomy_id', $taxonomy_node->taxonomy_id, true );
+
 						}
 
 						// Refresh list of Product Categories after insert.
-						$product_cats           = get_terms( $term_args );
+						$product_cats = get_terms( $term_args );
+
 						$product_cats_with_meta = array_map( function ( $product_cat ) {
 							$product_cat->_edgenet_id = get_term_meta( $product_cat->term_id, '_edgenet_id', true );
 
@@ -580,17 +598,17 @@ class Importer {
 	}
 
 	/**
+	 * Update the Product image gallery.
 	 *
-	 *
-	 * @param $digital_assets_group_id
-	 * @param $product
-	 * @param $post_id
+	 * @param string  $attribute_group_id The Edgenet Attribute Group ID.
+	 * @param Product $product            The Edgenet Product.
+	 * @param int     $post_id            The WordPress \WP_Post ID of the WooCommerce product.
 	 *
 	 * @return int[]
 	 */
-	public function update_image_gallery( $digital_assets_group_id, $product, $post_id ) {
-		if ( ! empty( $digital_assets_group_id ) ) {
-			$attachment_ids = $this->sideload_attribute_group( $digital_assets_group_id, $product, $post_id );
+	private function update_digital_assets( $attribute_group_id, $product, $post_id ) {
+		if ( ! empty( $attribute_group_id ) ) {
+			$attachment_ids = $this->sideload_attribute_group( $attribute_group_id, $product, $post_id );
 
 			update_post_meta( $post_id, '_product_image_gallery', implode( ',', $attachment_ids ) );
 		}
@@ -599,84 +617,83 @@ class Importer {
 	}
 
 	/**
+	 * Update the Product documents.
 	 *
-	 *
-	 * @param $digital_assets_group_id
-	 * @param $product
-	 * @param $post_id
+	 * @param string  $attribute_group_id
+	 * @param Product $product
+	 * @param int     $post_id
 	 *
 	 * @return int[]
 	 */
-	public function update_documents( $document_node_ids, $product, $post_id ): int {
+	private function update_documents( $attribute_group_id, $product, $post_id ) {
 		$document_id = 0;
 
-		$attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $document_node_ids );
+		// Get Attributes from Document group.
+		$attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $attribute_group_id );
 
 		foreach ( $attributes as $attribute ) {
 
 			$attachment_id = null;
 
-			$asset_id = $product->get_asset_value( $attribute->id );
-			if ( ! empty( $asset_id ) ) {
-				// check for media file before downloading
-				$post = get_page_by_title( $asset_id, 'OBJECT', 'attachment' );
-				if ( null === $post ) {
-					$attachment_id = $this->sideload_image(
-						$asset_id,
-						$this->generate_asset_url( $asset_id, 'pdf', null ),
-						$post_id
-					);
+			$asset_id = $product->get_asset_value( $attribute->id, '' );
 
-					if ( ! is_wp_error( $attachment_id ) ) {
+			// Skip to next Asset if ID wasn't returned.
+			if ( empty( $asset_id ) ) {
+				continue;
+			}
 
-					}
+			// Get the Attachment ID (new or existing).
+			$attachment_id = $this->sideload_attachment(
+				$asset_id,
+				$this->generate_edgenet_document_url( $asset_id ),
+				$post_id,
+				'pdf'
+			);
 
-				} else {
-					$attachment_id = $post->ID;
-				}
+			// Skip to next Asset if attachment ID wasn't returned.
+			if ( is_wp_error( $attachment_id ) ) {
+				continue;
+			}
 
-				$post_vars = [
-					'post_author' => edgenet()->settings->api['import_user'],
-					'post_title'  => $product->get_attribute_value( edgenet()->settings->_model_no, '' ) . ' : ' . $attribute->description,
-					'post_status' => 'publish',
-					'post_type'   => 'document',
+			$postarr = [
+				'post_author' => edgenet()->settings->api['import_user'],
+				'post_title'  => $this->generate_document_title( $product, $attribute ),
+				'post_status' => 'publish',
+				'post_type'   => Document::POST_TYPE,
+			];
+
+			// Setup WP_Query args to check if this product already exists.
+			// @see https://vip.wordpress.com/documentation/querying-on-meta_value/ for info on this query.
+			$args = [
+				'meta_key'     => '_edgenet_id_' . $asset_id, /* phpcs:ignore */
+				'meta_compare' => 'EXISTS',
+				'post_type'    => Document::POST_TYPE,
+			];
+
+			// Run the WP_Query.
+			$query = new \WP_Query( $args );
+
+			if ( $query->have_posts() ) {
+				// Product exists! Setup post data.
+				$query->the_post();
+
+				$postarr['ID'] = $query->post->ID;
+
+				$document_id = wp_update_post( $postarr );
+
+				update_post_meta( $document_id, Document::META_ATTACHMENT_ID, $attachment_id );
+
+				$this->set_post_term( $document_id, $attribute->description, Doc_Type::TAXONOMY );
+
+			} else {
+				$postarr['meta_input'] = [
+					'_edgenet_id_' . $asset_id   => $asset_id,
+					Document::META_ATTACHMENT_ID => $attachment_id,
 				];
 
+				$document_id = wp_insert_post( $postarr );
 
-				// Setup WP_Query args to check if this product already exists.
-				// @see https://vip.wordpress.com/documentation/querying-on-meta_value/ for info on this query.
-				$args = [
-					'meta_key'     => '_edgenet_id_' . $asset_id, /* phpcs:ignore */
-					'meta_compare' => 'EXISTS',
-					'post_type'    => 'document',
-				];
-
-				// Run the WP_Query.
-				$query = new \WP_Query( $args );
-
-				if ( $query->have_posts() ) {
-					// Product exists! Setup post data.
-					$query->the_post();
-
-					$post_vars['ID'] = $query->post->ID;
-
-					$document_id = wp_update_post( $post_vars );
-
-					update_post_meta( $document_id, '_edgenet_linked_document_id', $attachment_id );
-
-					$this->set_post_term( $document_id, $attribute->description, 'doc_type' );
-
-				} else {
-					$post_vars['meta_input'] = [
-						'_edgenet_id_' . $asset_id    => $asset_id,
-						'_edgenet_linked_document_id' => $attachment_id,
-					];
-
-					$document_id = wp_insert_post( $post_vars );
-
-					$this->set_post_term( $document_id, $attribute->description, 'doc_type' );
-				}
-
+				$this->set_post_term( $document_id, $attribute->description, Doc_Type::TAXONOMY );
 			}
 		}
 
@@ -684,11 +701,40 @@ class Importer {
 	}
 
 	/**
-	 * set specified taxonomy term to the incoming post object. If
+	 * Generate standardized Document title based on the Product and suffix (Doc_Type name).
+	 *
+	 * @param Product   $product   The Edgenet Product
+	 * @param Attribute $attribute The Edgenet Attribute
+	 * @param string    $delim     Delimeter between Product identifier and document description.
+	 *
+	 * @return string
+	 */
+	private function generate_document_title( $product, $attribute, $delim = ' &ndash; ' ) {
+
+		$prefix = $product->get_attribute_value( edgenet()->settings->_model_no, '' );
+
+		if ( empty( $prefix ) ) {
+			$prefix = $product->get_attribute_value( edgenet()->settings->_gtin, 'USSC PRODUCT' );
+		}
+
+		$suffix = $attribute->description;
+
+		$title = sprintf(
+			'%s%s%s',
+			$prefix,
+			$delim,
+			$suffix
+		);
+
+		return $title;
+	}
+
+	/**
+	 * Set specified taxonomy term to the incoming post object. If
 	 * the term doesn't already exist in the database, it will be created.
 	 *
-	 * @param    WP_Post $post The post to which we're adding the taxonomy term.
-	 * @param    string $value The name of the taxonomy term
+	 * @param    int    $post_id  The post to which we're adding the taxonomy term.
+	 * @param    string $value    The name of the taxonomy term.
 	 * @param    string $taxonomy The name of the taxonomy.
 	 *
 	 * @access   private
