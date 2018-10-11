@@ -88,6 +88,7 @@ class Edgenet {
 		// Init Post Types & Taxonomies.
 		new Document();
 		new Doc_Type();
+		new Taxonomies\Edgenet_Tax();
 
 		// Init Settings.
 		$this->settings = new Settings();

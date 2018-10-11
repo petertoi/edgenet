@@ -509,6 +509,7 @@ class Importer {
 	 * @param int      $post_id           The Product's \WP_Post id.
 	 */
 	private function update_taxonomy( $taxonomy_node_ids, $post_id ) {
+		$egdenet_tax_id = Taxonomies\Edgenet_Tax::TAXONOMY;
 		if ( ! empty( $taxonomy_node_ids ) ) {
 
 			// Iterate over taxonomy nodes until we find the right one.
@@ -527,7 +528,7 @@ class Importer {
 			if ( ! is_wp_error( $taxonomy_path ) && ! empty( $taxonomy_path ) ) {
 
 				$term_args = [
-					'taxonomy'     => 'product_cat',
+					'taxonomy'     => $egdenet_tax_id,
 					'hide_empty'   => false,
 					'meta_key'     => '_edgenet_id', /* phpcs:ignore */
 					'meta_compare' => 'EXISTS',
@@ -558,7 +559,7 @@ class Importer {
 
 						$term = wp_insert_term(
 							$taxonomy_node->description,
-							'product_cat',
+							$egdenet_tax_id,
 							[
 								'parent' => ( ! empty( $parent ) ) ? $parent->term_id : 0,
 							]
@@ -591,7 +592,7 @@ class Importer {
 
 				if ( ! empty( $leaf_term ) ) {
 					$leaf_term = array_shift( $leaf_term );
-					wp_set_object_terms( $post_id, $leaf_term->term_id, 'product_cat' );
+					wp_set_object_terms( $post_id, $leaf_term->term_id, $egdenet_tax_id );
 				}
 			}
 		}
