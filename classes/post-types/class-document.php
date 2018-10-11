@@ -7,35 +7,45 @@
  *
  */
 
-namespace USSC_Edgenet;
+namespace USSC_Edgenet\Post_Types;
 
+
+use USSC_Edgenet\Template;
 
 if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-class Documents {
+class Document {
 
-	public $post_type = 'document';
+	/**
+	 * Post type slug.
+	 */
+	const POST_TYPE = 'document';
 
+	/**
+	 * Rewrite slug.
+	 */
+	const REWRITE = 'document';
+
+	/**
+	 * Document constructor.
+	 */
 	public function __construct() {
-		add_action( 'init', array( $this, 'create_post_type' ) );
+		add_action( 'init', [ $this, 'register_document_post_type' ] );
 
 		add_action( 'add_meta_boxes', [ $this, 'add_meta_box' ] );
-
-		add_action( 'init', [ $this, 'create_tax' ] );
 	}
 
-	public function create_post_type() {
+	/**
+	 * Register the Document post type.
+	 */
+	public function register_document_post_type() {
 
 		/**
-		 * Filter: Document Post Type Labels
-		 *
-		 * @since   3.0.0
-		 *
-		 * @param array $labels
+		 * Document post type labels.
 		 */
-		$labels = array(
+		$labels = [
 			'name'               => esc_html_x( 'Documents', 'Documents Post Type General Name', 'ussc' ),
 			'singular_name'      => esc_html_x( 'Document', 'Documents Post Type Singular Name', 'ussc' ),
 			'add_new'            => esc_html__( 'Add New', 'ussc' ),
@@ -48,33 +58,25 @@ class Documents {
 			'not_found_in_trash' => esc_html__( 'No Documents found in Trash', 'ussc' ),
 			'parent_item_colon'  => '',
 			'all_items'          => esc_html__( 'Documents', 'ussc' ),
-			'menu_name'          => esc_html__( 'Document', 'ussc' ),
-		);
+			'menu_name'          => esc_html__( 'Documents', 'ussc' ),
+		];
 
 		/**
-		 * Filter: Document Post Type Supports
-		 *
-		 * @since   3.0.0
+		 * Document post type supports
 		 */
-		$supports = apply_filters( 'matador_post_type_supports_application', array(
-			'title',
-//			'editor',
-//			'custom-fields',
-		) );
+		$supports = [ 'title' ];
 
 		/**
-		 * Filter: Document Post Type Args
-		 *
-		 * @since   3.0.0
+		 * Document post type args
 		 */
-		$args = array(
-			'description'         => esc_html__( 'Documents for the Products.', 'ussc' ),
+		$args = [
+			'description'         => esc_html__( 'Product documents imported from Edgenet.', 'ussc' ),
 			'labels'              => $labels,
 			'public'              => false,
 			'publicly_queryable'  => false,
 			'exclude_from_search' => true,
 			'show_ui'             => true,
-			'show_in_menu'        => 'edit.php?post_type=product',
+			'show_in_menu'        => is_plugin_active( 'woocommerce/woocommerce.php' ) ? 'edit.php?post_type=product' : true,
 			'query_var'           => true,
 			'has_archive'         => false,
 			'hierarchical'        => false,
@@ -84,53 +86,52 @@ class Documents {
 			'show_in_nav_menus'   => true,
 			'show_in_admin_bar'   => false,
 			// Prevent Users from Creating/Editing/Deleting Documents
-//			'map_meta_cap'        => true,
+			// 'map_meta_cap'        => true,
 			'capability_type'     => 'product',
-//			'capabilities'        => array(
-//				'create_posts' => 'do_not_allow',
-//			),
-		);
+			'capabilities'        => array(
+				'create_posts' => 'do_not_allow',
+			),
+		];
 
-
-		register_post_type( $this->post_type, $args );
-
+		register_post_type( self::POST_TYPE, $args );
 	}
 
-
-	function add_meta_box() {
+	/**
+	 * Register the Meta Box
+	 */
+	public function add_meta_box() {
 		add_meta_box(
-			'ussc_marketing-ussc-marketing',
-			__( 'Linked File', 'ussc' ),
+			'ussc-document-pdf',
+			__( 'PDF', 'ussc' ),
 			[ $this, 'meta_html' ],
-			$this->post_type,
+			self::POST_TYPE,
 			'normal',
 			'default'
 		);
-
 	}
 
-	function meta_html( $post ) {
+	/**
+	 * Meta Box callback.
+	 *
+	 * @param \WP_Post $post The current post.
+	 */
+	public function meta_html( $post ) {
 
-		$doc_id = get_post_meta( $post->ID, '_edgenet_linked_document_id', true );
-		if ( empty( $doc_id ) ) {
-			return;
-		}
-		echo wp_get_attachment_link( $doc_id, 'medium' );
-		printf( '<br /><a href="%s" target="_blank">%1$s</a>', wp_get_attachment_url( $doc_id ) );
-	}
+		$data = [];
 
+		$attachment_id = get_post_meta( $post->ID, '_edgenet_wp_attachment_id', true );
 
+		$data['link'] = ( $attachment_id )
+			? wp_get_attachment_link( $attachment_id, 'medium' )
+			: '';
 
+		$data['url'] = ( $attachment_id )
+			? wp_get_attachment_url( $attachment_id )
+			: '';
 
-	function create_tax() {
-		register_taxonomy(
-			'doc_type',
-			$this->post_type,
-			array(
-				'label' => __( 'Document type' ),
-				'rewrite' => array( 'slug' => 'type' ),
-				'hierarchical' => true,
-			)
-		);
+		Template::load( 'admin/document-meta-box', $data );
 	}
 }
+
+
+

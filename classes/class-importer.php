@@ -18,8 +18,7 @@ class Importer {
 	/**
 	 * Importer constructor.
 	 */
-	public function __construct() {
-	}
+	public function __construct() {}
 
 	/**
 	 * Update Edgenet Distribution Requirement Set configuration.

@@ -6,6 +6,9 @@
 
 namespace USSC_Edgenet;
 
+use USSC_Edgenet\Post_Types\Document;
+use USSC_Edgenet\Taxonomies\Doc_Type;
+
 /**
  * Class WP_Vote
  *
@@ -82,8 +85,14 @@ class Edgenet {
 			$this->debug = true;
 		}
 
+		// Init Post Types & Taxonomies.
+		new Document();
+		new Doc_Type();
+
+		// Init Settings.
 		$this->settings = new Settings();
 
+		// Init API.
 		$this->api_adapter = new API_Adapter(
 			self::PROD_USERNAME,
 			self::PROD_SECRET,
@@ -91,8 +100,8 @@ class Edgenet {
 			new API()
 		);
 
+		// Init Importer.
 		$this->importer = new Importer();
-		$this->documents = new Documents();
 
 		// Init admin.
 		add_action( 'plugins_loaded', [ $this, 'admin_init' ], 10 );
