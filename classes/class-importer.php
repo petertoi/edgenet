@@ -253,12 +253,12 @@ class Importer {
 			'_gtin'                       => $product->get_attribute_value( edgenet()->settings->_gtin, '' ),
 			'_sku'                        => $product->get_attribute_value( edgenet()->settings->_sku, '' ),
 			'_model_no'                   => $product->get_attribute_value( edgenet()->settings->_model_no, '' ),
-			'_regular_price'              => floatval( $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ),
-			'_price'                      => floatval( $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ),
-			'_weight'                     => floatval( $product->get_attribute_value( edgenet()->settings->_weight, '' ) ),
-			'_length'                     => floatval( $product->get_attribute_value( edgenet()->settings->_length, '' ) ),
-			'_width'                      => floatval( $product->get_attribute_value( edgenet()->settings->_width, '' ) ),
-			'_height'                     => floatval( $product->get_attribute_value( edgenet()->settings->_height, '' ) ),
+			'_regular_price'              => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ) ),
+			'_price'                      => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ) ),
+			'_weight'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_weight, '' ) ) ),
+			'_length'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_length, '' ) ) ),
+			'_width'                      => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_width, '' ) ) ),
+			'_height'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_height, '' ) ) ),
 		];
 
 		// Grab all the Marketing attributes from this Product.
