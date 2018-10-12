@@ -91,8 +91,8 @@ class Document {
 			'show_in_nav_menus'   => true,
 			'show_in_admin_bar'   => false,
 			// Prevent Users from Creating/Editing/Deleting Documents
-			// 'map_meta_cap'        => true,
-			'capability_type'     => 'product',
+			 'map_meta_cap'        => true,
+			'capability_type'     => 'post',
 			'capabilities'        => array(
 				'create_posts' => 'do_not_allow',
 			),
