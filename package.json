@@ -54,8 +54,6 @@
     }
   },
   "dependencies": {
-    "chart.js": "^2.7.2",
-    "yarn": "^1.10.1"
   },
   "devDependencies": {
     "autoprefixer": "~8.2.0",
