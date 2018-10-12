@@ -1,9 +1,9 @@
 {
-  "name": "wp-vote",
-  "version": "2.0.0",
+  "name": "ussc-edgenet-plugin",
+  "version": "1.0.0",
   "description": "WordPress plugin",
   "private": true,
-  "repository": "git@bitbucket.org:wp-vote/wp-vote.git",
+  "repository": "git@bitbucket.org:toibox/ussc-edgenet-plugin.git",
   "author": "Peter Toi <peter@petertoi.com>",
   "license": "GPL",
   "scripts": {

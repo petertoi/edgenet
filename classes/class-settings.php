@@ -256,4 +256,39 @@ class Settings {
 
 		return $this->cache[ __FUNCTION__ ];
 	}
+
+	/**
+	 * Check if all the Core Settings have been set.
+	 *
+	 * @return bool
+	 */
+	public function is_core_valid() {
+		$core_settings = [
+			'data_owner',
+			'username',
+			'secret',
+			'requirement_set',
+			'taxonomy_id',
+			'import_user',
+		];
+
+		$valid = true;
+
+		foreach ( $core_settings as $setting ) {
+			if ( ! isset( $this->api[ $setting ] ) ) {
+				$valid = false;
+			}
+		}
+
+		return $valid;
+	}
+
+	/**
+	 * Check if all the Requirement Set exists.
+	 *
+	 * @return bool
+	 */
+	public function is_requirement_set_valid() {
+		return ( isset( $this->requirement_set ) );
+	}
 }

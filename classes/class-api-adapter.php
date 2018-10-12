@@ -25,18 +25,51 @@ use USSC_Edgenet\Item\Taxonomy_Node;
  */
 class API_Adapter {
 
+	/**
+	 * Number of authentication tries before the adapter call fails.
+	 */
 	const MAX_TRIES = 3;
 
+	/**
+	 * Reference to Edgenet API.
+	 *
+	 * @var API
+	 */
 	public $api;
 
+	/**
+	 * Reference to Edgenet API Username.
+	 *
+	 * @var string
+	 */
 	private $username;
 
+	/**
+	 * Reference to Edgenet API Secret.
+	 *
+	 * @var string
+	 */
 	private $secret;
 
+	/**
+	 * Reference to Edgenet API Auth Token.
+	 *
+	 * @var string
+	 */
 	private $auth_token;
 
+	/**
+	 * Reference to Edgenet API Data Owner.
+	 *
+	 * @var string
+	 */
 	private $data_owner;
 
+	/**
+	 * Track number of authentication tries.
+	 *
+	 * @var int
+	 */
 	private $tries = 0;
 
 	/**
@@ -52,7 +85,6 @@ class API_Adapter {
 		$this->secret     = $secret;
 		$this->data_owner = $data_owner;
 		$this->api        = $api;
-
 	}
 
 	/**
@@ -66,6 +98,7 @@ class API_Adapter {
 	 */
 	private function call( $endpoint, $method, $data = null ) {
 
+		// Get an Auth Token if we don't have one.
 		if ( empty( $this->auth_token ) ) {
 			$response = $this->auth();
 			if ( ! is_wp_error( $response ) ) {
@@ -76,7 +109,7 @@ class API_Adapter {
 
 		$this->tries = 0;
 
-		// Assume the token has been set via __constructor or previous call.
+		// Assume the token has been set via previous call.
 		$headers = [
 			'Authorization' => 'EN ' . $this->auth_token,
 		];

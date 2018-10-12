@@ -1,16 +1,16 @@
-.wpv-meta-box {
-  .nav-tab-wrapper {
-    li {
-      margin: 0;
-      a {
-        border-bottom: 1px solid #ccc;
-        margin-bottom: -1px;
-      }
+.nav-tab-wrapper {
+  li {
+    margin: 0;
+
+    a {
+      border-bottom: 1px solid #ccc;
+      margin-bottom: -1px;
     }
-    .ui-state-active a {
-      color: #000;
-      background: #fff;
-      border-bottom: 1px solid #fff;
-    }
+  }
+
+  .ui-state-active a {
+    color: #000;
+    background: #fff;
+    border-bottom: 1px solid #fff;
   }
 }

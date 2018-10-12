@@ -53,6 +53,13 @@ class Edgenet {
 	public $debug = false;
 
 	/**
+	 * Assets manifest
+	 *
+	 * @var array
+	 */
+	public $assets;
+
+	/**
 	 * Settings
 	 *
 	 * @var Settings
@@ -140,5 +147,30 @@ class Edgenet {
 	 */
 	public function get_plugin_url( $relative = '' ) {
 		return $this->plugin_url . $relative;
+	}
+
+	/**
+	 * Get the absolute URL for CSS and JS files.
+	 * Parses dist/assets.json to retrieve production asset if they exist.
+	 *
+	 * @param string $path Relative path to asset in dist/ folder, ex: 'scripts/main.js'.
+	 *
+	 * @return string
+	 */
+	public function get_assets_url( $path ) {
+		if ( ! isset( $this->assets ) ) {
+			$manifest = $this->get_plugin_path( 'dist/assets.json' );
+			if ( file_exists( $manifest ) ) {
+				$this->assets = json_decode( file_get_contents( $manifest ), true ); // phpcs:ignore
+			} else {
+				$this->assets = [];
+			}
+		}
+
+		$url = ( isset( $this->assets[ $path ] ) )
+			? $this->get_plugin_url( 'dist/' . $this->assets[ $path ] )
+			: $this->get_plugin_url( 'dist/' . $path );
+
+		return $url;
 	}
 }
