@@ -94,7 +94,7 @@ class Importer {
 		}
 
 		// Set flag to block consecutive imports from occuring. Expires in 30 seconds.
-		set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS * 30 );
+		set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS / 2 );
 
 		// Get $product_ids via API if not provided.
 		if ( empty( $product_ids ) ) {
@@ -143,7 +143,7 @@ class Importer {
 		}
 
 		// Set flag to block consecutive imports from occuring. Expires in 30 seconds.
-		set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS * 30 );
+		set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS / 2 );
 
 		// Track if we skipped the product update when comparing last_verified times.
 		$update_skipped = false;
