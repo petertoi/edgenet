@@ -8,6 +8,7 @@ namespace USSC_Edgenet;
 
 use USSC_Edgenet\Post_Types\Document;
 use USSC_Edgenet\Taxonomies\Doc_Type;
+use USSC_Edgenet\Taxonomies\Edgenet_Cat;
 
 /**
  * Class WP_Vote
@@ -95,7 +96,7 @@ class Edgenet {
 		// Init Post Types & Taxonomies.
 		new Document();
 		new Doc_Type();
-		new Taxonomies\Edgenet_Cat();
+		new Edgenet_Cat();
 
 		// Init Settings.
 		$this->settings = new Settings();

@@ -13,6 +13,7 @@ use USSC_Edgenet\Item\Attribute_Group;
 use USSC_Edgenet\Item\Product;
 use USSC_Edgenet\Post_Types\Document;
 use USSC_Edgenet\Taxonomies\Doc_Type;
+use USSC_Edgenet\Taxonomies\Edgenet_Cat;
 
 class Importer {
 
@@ -248,6 +249,94 @@ class Importer {
 		// Set Product Categories.
 		$taxonomy_node_ids = $product->taxonomy_node_ids;
 		$this->update_taxonomy( $taxonomy_node_ids, $post_id );
+	}
+
+	/**
+	 * Sync Edgenet Terms to Product Categories
+	 *
+	 * @return array
+	 */
+	public function sync_edgenet_cat_to_product_cat() {
+		$sync_status = [];
+
+		/**
+		 * @var \WP_Term[] $edgenet_terms
+		 */
+		$edgenet_terms = get_terms( [
+			'taxonomy'   => Edgenet_Cat::TAXONOMY,
+			'hide_empty' => false, // TODO: should push empty tax?
+		] );
+
+		foreach ( $edgenet_terms as $edgenet_term ) {
+			$status = [
+				'edgenet_cat' => $edgenet_term,
+				'product_cat' => null,
+				'products'    => [],
+			];
+
+			$linked_product_term_id = get_term_meta( $edgenet_term->term_id, Edgenet_Cat::META_EDGENET_2_PRODUCT, true );
+
+			if ( empty( $linked_product_term_id ) ) {
+				continue;
+			}
+
+			$status['product_cat'] = $linked_product_term_id;
+
+//			$linked_product_term_children_ids = get_term_children( $linked_product_term_id, 'product_cat' );
+
+//			$not_found = true;
+
+//			foreach ( $linked_product_term_children_ids as $child_id ) {
+//				$child_term = get_term_by( 'id', $child_id, self::TARGET_TAX );
+//				// let look for a match exit if found
+//				if ( $child_term->name === $edgenet_term->name ) {
+//					$not_found = false;
+//					continue;
+//				}
+//			}
+
+			// not found so lets add the tax
+//			if ( $not_found ) {
+//				$child_term = wp_insert_term(
+//					$edgenet_term->name,
+//					self::TARGET_TAX,
+//					array(
+//						'slug'   => strtolower( str_ireplace( ' ', '-', $edgenet_term->slug ) ),
+//						'parent' => $linked_product_term_id
+//					)
+//				);
+//			}
+
+			// now add the product term to all posts that had the edgenet term
+			$post_args = [
+				'posts_per_page' => - 1,
+				'post_type'      => 'product',
+				'tax_query'      => array(
+					array(
+						'taxonomy' => Edgenet_Cat::TAXONOMY,
+						'field'    => 'term_id',
+						'terms'    => $edgenet_term->term_id,
+					)
+				),
+				'fields'         => 'ids',
+			];
+
+			$product_ids = get_posts( $post_args );
+
+			foreach ( $product_ids as $product_id ) {
+				$result = wp_set_object_terms( $product_id, $linked_product_term_id, 'product_cat' );
+
+				$status['products'][] = [
+					'product_id' => $product_id,
+					'result'     => $result,
+				];
+			}
+			$sync_status[] = $status;
+			unset( $status );
+		}
+
+		return $sync_status;
+
 	}
 
 	/**

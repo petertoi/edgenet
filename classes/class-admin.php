@@ -119,6 +119,7 @@ class Admin {
 			edgenet()->importer->import_product( $product_id, true );
 		} elseif ( ! empty( $map_categories ) ) {
 			// Map Categories.
+			edgenet()->importer->sync_edgenet_cat_to_product_cat();
 		}
 	}
 
