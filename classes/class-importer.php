@@ -509,7 +509,7 @@ class Importer {
 	 * @param int      $post_id           The Product's \WP_Post id.
 	 */
 	private function update_taxonomy( $taxonomy_node_ids, $post_id ) {
-		$egdenet_tax_id = Taxonomies\Edgenet_Tax::TAXONOMY;
+		$egdenet_tax_id = Taxonomies\Edgenet_Cat::TAXONOMY;
 		if ( ! empty( $taxonomy_node_ids ) ) {
 
 			// Iterate over taxonomy nodes until we find the right one.
