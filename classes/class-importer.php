@@ -263,20 +263,20 @@ class Importer {
 
 		foreach ( $edgenet_terms as $edgenet_term ) {
 			$status = [
-				'edgenet_cat' => $edgenet_term,
-				'product_cat' => null,
-				'products'    => [],
+				'edgenet_cat'  => $edgenet_term,
+				'product_cats' => null,
+				'products'     => [],
 			];
 
-			$linked_product_term_id = get_term_meta( $edgenet_term->term_id, Edgenet_Cat::META_EDGENET_2_PRODUCT, true );
+			$linked_product_term_ids = json_decode( get_term_meta( $edgenet_term->term_id, Edgenet_Cat::META_EDGENET_2_PRODUCT, true ) );
 
-			if ( empty( $linked_product_term_id ) ) {
+			if ( empty( $linked_product_term_ids ) ) {
 				continue;
 			}
 
-			$status['product_cat'] = $linked_product_term_id;
+			$status['product_cats'] = $linked_product_term_ids;
 
-//			$linked_product_term_children_ids = get_term_children( $linked_product_term_id, 'product_cat' );
+//			$linked_product_term_children_ids = get_term_children( $linked_product_term_ids, 'product_cat' );
 
 //			$not_found = true;
 
@@ -296,7 +296,7 @@ class Importer {
 //					self::TARGET_TAX,
 //					array(
 //						'slug'   => strtolower( str_ireplace( ' ', '-', $edgenet_term->slug ) ),
-//						'parent' => $linked_product_term_id
+//						'parent' => $linked_product_term_ids
 //					)
 //				);
 //			}
@@ -318,7 +318,7 @@ class Importer {
 			$product_ids = get_posts( $post_args );
 
 			foreach ( $product_ids as $product_id ) {
-				$result = wp_set_object_terms( $product_id, $linked_product_term_id, 'product_cat' );
+				$result = wp_set_object_terms( $product_id, $linked_product_term_ids, 'product_cat' );
 
 				$status['products'][] = [
 					'product_id' => $product_id,
