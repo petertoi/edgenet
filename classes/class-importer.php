@@ -111,12 +111,19 @@ class Importer {
 		wp_defer_term_counting( true );
 
 		foreach ( $product_ids as $product_id ) {
+
+			// Reset flag to block consecutive imports from occuring. Expires in 30 seconds.
+			set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS / 2 );
+
 			$status[] = $this->import_product( $product_id, $force_update );
 
 		}
 
 		// Re-enable term counting to sync taxonomy term counts.
 		wp_defer_term_counting( false );
+
+		// Clear import mutex.
+		delete_transient( self::META_IMPORT_MUTEX );
 
 		return $status;
 	}
@@ -129,21 +136,8 @@ class Importer {
 	 *
 	 * @return int|\WP_Error The Post ID on success or \WP_Error if failure.
 	 */
-	public function import_product( $product_id, $force_update = false ) {
+	private function import_product( $product_id, $force_update = false ) {
 		global $post;
-
-		// Check if we're already in the process of importing.
-		$import_active = get_transient( self::META_IMPORT_MUTEX );
-
-		if ( $import_active ) {
-			return new \WP_Error(
-				'ussc-edgenet-import-error',
-				__( 'Another import is still underway. Please try again later.', 'ussc' )
-			);
-		}
-
-		// Set flag to block consecutive imports from occuring. Expires in 30 seconds.
-		set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS / 2 );
 
 		// Track if we skipped the product update when comparing last_verified times.
 		$update_skipped = false;

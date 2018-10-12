@@ -116,7 +116,7 @@ class Admin {
 		} elseif ( ! empty( $import_product_by_id ) ) {
 			// Import Product By ID.
 			$product_id = filter_input( INPUT_POST, 'edgenet_import_product_id', FILTER_SANITIZE_STRING );
-			edgenet()->importer->import_product( $product_id, true );
+			edgenet()->importer->import_products( [ $product_id ], true );
 		} elseif ( ! empty( $map_categories ) ) {
 			// Map Categories.
 			edgenet()->importer->sync_edgenet_cat_to_product_cat();
