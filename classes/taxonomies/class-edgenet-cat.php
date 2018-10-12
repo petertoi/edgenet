@@ -59,7 +59,7 @@ class Edgenet_Cat {
 			self::TAXONOMY,
 			'product',
 			[
-				'label'        => __( 'Edgenet Category', 'ussc' ),
+				'label'        => __( 'Edgenet Categories', 'ussc' ),
 				'rewrite'      => [ 'slug' => self::REWRITE ],
 				'hierarchical' => true,
 			]
