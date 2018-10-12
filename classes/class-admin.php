@@ -112,7 +112,8 @@ class Admin {
 			edgenet()->importer->import_requirement_set( edgenet()->settings->api['requirement_set'] );
 		} elseif ( ! empty( $import_products ) ) {
 			// Import Products.
-			edgenet()->importer->import_products();
+			wp_schedule_single_event( time(), 'ussc_product_sync_now' );
+
 		} elseif ( ! empty( $import_product_by_id ) ) {
 			// Import Product By ID.
 			$product_id = filter_input( INPUT_POST, 'edgenet_import_product_id', FILTER_SANITIZE_STRING );

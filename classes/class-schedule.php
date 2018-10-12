@@ -22,6 +22,7 @@ class Schedule {
 		add_action( 'init', array( $this, 'schedule_product_sync' ) );
 
 		add_action( 'ussc_product_sync', array( $this, 'product_sync' ) );
+		add_action( 'ussc_product_sync_now', array( $this, 'product_sync' ) );
 
 	}
 
