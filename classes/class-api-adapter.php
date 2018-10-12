@@ -426,5 +426,4 @@ class API_Adapter {
 
 		return $paths;
 	}
-
 }

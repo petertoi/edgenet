@@ -16,7 +16,7 @@ use USSC_Edgenet\Taxonomies\Doc_Type;
 
 class Importer {
 
-	const IMPORTER_ACTIVE_TRANSIENT = 'edgenet_importer_active';
+	const META_IMPORT_MUTEX = 'edgenet_import_mutex';
 
 	/**
 	 * Importer constructor.
@@ -68,7 +68,7 @@ class Importer {
 	 * @param array $product_ids  Specific Product ID(s) to import. Leave null for all products.
 	 * @param bool  $force_update Force update products regardless of verified date.
 	 *
-	 * @return array Array of Product IDs and import status.
+	 * @return array|\WP_Error Array of Product IDs or WP_Error if another import already running.
 	 */
 	public function import_products( $product_ids = [], $force_update = false ) {
 		$status = [];
@@ -82,9 +82,21 @@ class Importer {
 			);
 		}
 
+		// Check if we're already in the process of importing.
+		$import_active = get_transient( self::META_IMPORT_MUTEX );
+
+		if ( $import_active ) {
+			return new \WP_Error(
+				'ussc-edgenet-import-error',
+				__( 'Another import is still underway. Please try again later.', 'ussc' )
+			);
+		}
+
+		// Set flag to block consecutive imports from occuring. Expires in 30 seconds.
+		set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS * 30 );
+
 		// Get $product_ids via API if not provided.
 		if ( empty( $product_ids ) ) {
-			set_transient( self::IMPORTER_ACTIVE_TRANSIENT, true, MINUTE_IN_SECONDS * 5 );
 			$product_ids = $this->get_product_ids( [
 				'DataOwner'                => Edgenet::DATA_OWNER,
 				'Archived'                 => false,
@@ -118,6 +130,19 @@ class Importer {
 	 */
 	public function import_product( $product_id, $force_update = false ) {
 		global $post;
+
+		// Check if we're already in the process of importing.
+		$import_active = get_transient( self::META_IMPORT_MUTEX );
+
+		if ( $import_active ) {
+			return new \WP_Error(
+				'ussc-edgenet-import-error',
+				__( 'Another import is still underway. Please try again later.', 'ussc' )
+			);
+		}
+
+		// Set flag to block consecutive imports from occuring. Expires in 30 seconds.
+		set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS * 30 );
 
 		// Track if we skipped the product update when comparing last_verified times.
 		$update_skipped = false;
@@ -217,8 +242,8 @@ class Importer {
 		$attachment_ids          = $this->update_digital_assets( $digital_assets_group_id, $product, $post_id );
 
 		// Sideload Documents.
-		$document_node_ids = edgenet()->settings->_documents;
-		$document_ids      = $this->update_documents( $document_node_ids, $product, $post_id );
+		$document_group_id = edgenet()->settings->_documents;
+		$document_ids      = $this->update_documents( $document_group_id, $product, $post_id );
 
 		// Set Product Categories.
 		$taxonomy_node_ids = $product->taxonomy_node_ids;
@@ -393,10 +418,10 @@ class Importer {
 	 *
 	 * @link   http://wordpress.stackexchange.com/a/145349/26350
 	 *
-	 * @param  string $title    Attachment title.
-	 * @param  string $url      URL of image to import.
-	 * @param  string $file_ext The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
-	 * @param  int    $post_id  Post ID to attach image to.
+	 * @param string $title    Attachment title.
+	 * @param string $url      URL of image to import.
+	 * @param int    $post_id  Post ID to attach image to.
+	 * @param string $file_ext The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
 	 *
 	 * @return int|\WP_Error $attachment_id The ID of the Attachment post or \WP_Error if failure.
 	 */
@@ -471,6 +496,7 @@ class Importer {
 	 * @param string  $attribute_group_id The Attribute Group ID for Digital Assets.
 	 * @param Product $product            The Product.
 	 * @param int     $post_id            The Post ID.
+	 * @param string  $file_ext           The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
 	 *
 	 * @return int[] Array of Attachment IDs sideloaded and attached to the post.
 	 */
