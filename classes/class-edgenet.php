@@ -97,6 +97,7 @@ class Edgenet {
 		new Document();
 		new Doc_Type();
 		new Edgenet_Cat();
+		new Schedule();
 
 		// Init Settings.
 		$this->settings = new Settings();

@@ -54,7 +54,8 @@
     }
   },
   "dependencies": {
-    "chart.js": "^2.7.2"
+    "chart.js": "^2.7.2",
+    "yarn": "^1.10.1"
   },
   "devDependencies": {
     "autoprefixer": "~8.2.0",
@@ -93,5 +94,6 @@
     "webpack-dev-middleware": "~2.0.4",
     "webpack-hot-middleware": "~2.22.3",
     "webpack-merge": "~4.1.4",
-    "yargs": "~11.0.0"  }
+    "yargs": "~11.0.0"
+  }
 }
