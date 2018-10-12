@@ -597,8 +597,8 @@ class Importer {
 					( 'pdf' === $file_ext )
 						? $this->generate_edgenet_document_url( $asset_id )
 						: $this->generate_edgenet_image_url( $asset_id ),
-					$file_ext,
-					$post_id
+					$post_id,
+					$file_ext
 				);
 
 				if ( ! is_wp_error( $attachment_id ) ) {
