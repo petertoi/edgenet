@@ -97,7 +97,6 @@ class Edgenet {
 		new Document();
 		new Doc_Type();
 		new Edgenet_Cat();
-		new Schedule();
 
 		// Init Settings.
 		$this->settings = new Settings();
@@ -112,6 +111,9 @@ class Edgenet {
 
 		// Init Importer.
 		$this->importer = new Importer();
+
+		// Init CRON.
+		new CRON();
 
 		// Init admin.
 		add_action( 'plugins_loaded', [ $this, 'admin_init' ], 10 );
