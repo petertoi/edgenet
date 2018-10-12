@@ -46,7 +46,7 @@ class Document {
 	 * Register the Document post type.
 	 */
 	public function register_document_post_type() {
-
+		include_once(ABSPATH.'wp-admin/includes/plugin.php');
 		/**
 		 * Document post type labels.
 		 */
@@ -81,7 +81,7 @@ class Document {
 			'publicly_queryable'  => false,
 			'exclude_from_search' => true,
 			'show_ui'             => true,
-			'show_in_menu'        => is_plugin_active( 'woocommerce/woocommerce.php' ) ? 'edit.php?post_type=product' : true,
+			'show_in_menu'        => \is_plugin_active( 'woocommerce/woocommerce.php' ) ? 'edit.php?post_type=product' : true,
 			'query_var'           => true,
 			'has_archive'         => false,
 			'hierarchical'        => false,
