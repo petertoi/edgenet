@@ -22,8 +22,7 @@ class Importer {
 	/**
 	 * Importer constructor.
 	 */
-	public function __construct() {
-	}
+	public function __construct() {}
 
 	/**
 	 * Update Edgenet Distribution Requirement Set configuration.
@@ -362,25 +361,45 @@ class Importer {
 			'_height'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_height, '' ) ) ),
 		];
 
-		// Grab all the Marketing attributes from this Product.
-		$marketing_group_id = edgenet()->settings->_marketing;
-		if ( ! empty( $marketing_group_id ) ) {
-			$marketing_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $marketing_group_id );
+		// Grab all the Features attributes from this Product.
+		$features_group_id = edgenet()->settings->_features;
+		if ( ! empty( $features_group_id ) ) {
+			$features_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $features_group_id );
 
-			$meta_input['_marketing'] = $product->get_attributes_values( $marketing_attributes );
+			$meta_input['_features'] = $product->get_attributes_values( $features_attributes );
 		} else {
-			$meta_input['_marketing'] = [];
+			$meta_input['_features'] = [];
 		}
 
-		// Grab all the Specification attributes from this Product.
-//			$specifications_group_id = $this->settings->_specifications;
-//			if ( ! empty( $specifications_group_id ) ) {
-//				$specifications_attributes = $this->settings->requirement_set->get_attributes_by_group_id( $specifications_group_id );
-//
-//				$meta_input['_specifications'] = $product->get_attributes_values( $specifications_attributes );
-//			} else {
-//				$meta_input['_specifications'] = [];
-//			}
+		// Grab all the Dimensions attributes from this Product.
+		$dimensions_group_id = edgenet()->settings->_dimensions;
+		if ( ! empty( $dimensions_group_id ) ) {
+			$dimensions_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $dimensions_group_id );
+
+			$meta_input['_dimensions'] = $product->get_attributes_values( $dimensions_attributes );
+		} else {
+			$meta_input['_dimensions'] = [];
+		}
+
+		// Grab all the Other attributes from this Product.
+		$other_group_id = edgenet()->settings->_other;
+		if ( ! empty( $other_group_id ) ) {
+			$other_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $other_group_id );
+
+			$meta_input['_other'] = $product->get_attributes_values( $other_attributes );
+		} else {
+			$meta_input['_other'] = [];
+		}
+
+		// Grab all the Regulatory attributes from this Product.
+		$regulatory_group_id = edgenet()->settings->_regulatory;
+		if ( ! empty( $regulatory_group_id ) ) {
+			$regulatory_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $regulatory_group_id );
+
+			$meta_input['_regulatory'] = $product->get_attributes_values( $regulatory_attributes );
+		} else {
+			$meta_input['_regulatory'] = [];
+		}
 
 		return $meta_input;
 	}
