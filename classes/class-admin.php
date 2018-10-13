@@ -56,7 +56,10 @@ class Admin {
 	 * @param string $hook_suffix Page hook.
 	 */
 	public function admin_enqueue_scripts( $hook_suffix ) {
-		if ( 'woocommerce_page_ussc-edgenet' !== $hook_suffix ) {
+		if (
+			'woocommerce_page_ussc-edgenet' !== $hook_suffix
+			&& 'post.php' !== $hook_suffix
+		) {
 			return;
 		}
 		wp_enqueue_style( 'ussc-edgenet-admin', edgenet()->get_assets_url( 'styles/admin.css' ), [], Edgenet::VERSION );

@@ -116,20 +116,11 @@ class Edgenet {
 		new CRON();
 
 		// Init admin.
-		add_action( 'plugins_loaded', [ $this, 'admin_init' ], 10 );
-		add_action( 'edgenet_sync_now', [ $this, 'import_products' ] );
-	}
-
-	/**
-	 * Init Admin
-	 *
-	 * @hook wp
-	 * @hook admin_init
-	 */
-	public function admin_init() {
 		if ( is_admin() ) {
 			new Admin();
+			new Woo_Product();
 		}
+
 	}
 
 	/**
