@@ -26,7 +26,6 @@ class Admin {
 		add_action( 'init', [ $this, 'save_edgenet_settings' ] );
 		add_action( 'admin_menu', [ $this, 'edgenet_settings_page_menu' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'admin_enqueue_scripts' ] );
-		add_action( 'add_meta_boxes', [ $this, 'marketing_add_meta_box' ] );
 	}
 
 	/**
@@ -192,63 +191,4 @@ class Admin {
 			'postmeta' => $postmeta,
 		] );
 	}
-
-	function ussc_marketing_get_meta( $value ) {
-		global $post;
-
-		$field = get_post_meta( $post->ID, $value, true );
-		if ( ! empty( $field ) ) {
-			return is_array( $field ) ? stripslashes_deep( $field ) : stripslashes( wp_kses_decode_entities( $field ) );
-		} else {
-			return false;
-		}
-	}
-
-	function marketing_add_meta_box() {
-		add_meta_box(
-			'ussc_marketing-ussc-marketing',
-			__( 'Marketing Meta', 'ussc' ),
-			[ $this, 'ussc_marketing_html' ],
-			'product',
-			'normal',
-			'default'
-		);
-		add_meta_box(
-			'ussc_ussc_specifications_html-ussc-marketing',
-			__( 'Specifications Meta', 'ussc' ),
-			[ $this, 'ussc_specifications_html' ],
-			'product',
-			'normal',
-			'default'
-		);
-	}
-
-	function ussc_marketing_html( $post ) {
-
-		$marketing_attributes = get_post_meta( get_the_ID(), '_marketing', true );
-		if ( empty( $marketing_attributes ) ) {
-			return;
-		}
-		echo '<ul>';
-		foreach ( $marketing_attributes as $marketing_attribute ) {
-			printf( '<li><strong>%s:</strong> %s</li>', $marketing_attribute['attribute']->description, $marketing_attribute['value'] );
-		}
-		echo '</ul>';
-	}
-
-	function ussc_specifications_html( $post ) {
-
-		$specifications_attributes = get_post_meta( get_the_ID(), '_specifications', true );
-
-		if ( empty( $specifications_attributes ) ) {
-			return;
-		}
-		echo '<ul>';
-		foreach ( $specifications_attributes as $specifications_attribute ) {
-			printf( '<li><strong>%s:</strong> %s</li>', $specifications_attribute['attribute']->description, $specifications_attribute['value'] );
-		}
-		echo '</ul>';
-	}
-
-
 }
