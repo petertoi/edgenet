@@ -120,8 +120,14 @@ class Edgenet_Cat {
 	 * @param mixed  $term_id  Term ID being saved.
 	 * @param mixed  $tt_id    Term taxonomy ID.
 	 * @param string $taxonomy Taxonomy slug.
+	 *
+	 * @return void
 	 */
 	public function save_category_fields( $term_id, $tt_id, $taxonomy ) {
+		if ( self::TAXONOMY !== $taxonomy ) {
+			return;
+		}
+
 		$safe_meta_vals = [];
 
 		// Sanitize input.
