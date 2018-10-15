@@ -45,6 +45,15 @@ class Product {
 		$this->audit_info              = $params['AuditInfo'];
 	}
 
+	/**
+	 * get the value for Attribute ID
+	 *
+	 * @param        $attribute_id
+	 * @param string $default
+	 * @param string $lang
+	 *
+	 * @return string
+	 */
 	public function get_attribute_value( $attribute_id, $default = '', $lang = 'en-US' ) {
 		$value = $default;
 		foreach ( $this->components as $component ) {
@@ -72,7 +81,7 @@ class Product {
 	/**
 	 * Get set of Attribute IDs and Values from Product.
 	 *
-	 * @param array  $attribute_ids Array of Attribute IDs.
+	 * @param array  $attributes Array of Attributes.
 	 * @param string $default       Fallback value if attribute not found.
 	 * @param string $lang          Language.
 	 *
