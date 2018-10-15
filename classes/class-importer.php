@@ -22,7 +22,8 @@ class Importer {
 	/**
 	 * Importer constructor.
 	 */
-	public function __construct() {}
+	public function __construct() {
+	}
 
 	/**
 	 * Update Edgenet Distribution Requirement Set configuration.
@@ -241,7 +242,7 @@ class Importer {
 
 		// Set Product Categories.
 		$taxonomy_node_ids = $product->taxonomy_node_ids;
-		$this->update_taxonomy( $taxonomy_node_ids, $post_id );
+		$this->update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id );
 	}
 
 	/**
@@ -636,24 +637,27 @@ class Importer {
 	 * @param string[] $taxonomy_node_ids Array of Taxonomy Node Ids.
 	 * @param int      $post_id           The Product's \WP_Post id.
 	 */
-	private function update_taxonomy( $taxonomy_node_ids, $post_id ) {
+	private function update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id ) {
 		$egdenet_tax_id = Taxonomies\Edgenet_Cat::TAXONOMY;
 		if ( ! empty( $taxonomy_node_ids ) ) {
 
 			// Iterate over taxonomy nodes until we find the right one.
 			foreach ( $taxonomy_node_ids as $taxonomy_node_id ) {
-				$taxonomy_path = edgenet()->api_adapter->taxonomynode_pathtoroot( $taxonomy_node_id );
+				$taxonomynode_path = edgenet()->api_adapter->taxonomynode_pathtoroot( $taxonomy_node_id );
 
 				// Bypass 'other' taxonomies. We're only interested in one.
-				if ( is_wp_error( $taxonomy_path ) || ! empty( $taxonomy_path ) && Edgenet::TAXONOMY_ID !== $taxonomy_path[0]->taxonomy_id ) {
+				if ( is_wp_error( $taxonomynode_path ) || ! empty( $taxonomynode_path ) && Edgenet::TAXONOMY_ID !== $taxonomynode_path[0]->taxonomy_id ) {
 					continue;
 				}
 
-				$taxonomy_path = array_reverse( $taxonomy_path );
+				$taxonomynode_path = array_reverse( $taxonomynode_path );
 				break;
 			}
 
-			if ( ! is_wp_error( $taxonomy_path ) && ! empty( $taxonomy_path ) ) {
+
+			if ( ! is_wp_error( $taxonomynode_path ) && ! empty( $taxonomynode_path ) ) {
+
+				$this->update_edgenet_taxonomy_attributes( $taxonomynode_path, $product, $post_id );
 
 				$term_args = [
 					'taxonomy'     => $egdenet_tax_id,
@@ -670,7 +674,7 @@ class Importer {
 					return $product_cat;
 				}, $product_cats );
 
-				foreach ( $taxonomy_path as $taxonomy_node ) {
+				foreach ( $taxonomynode_path as $taxonomy_node ) {
 
 					$existing = array_filter( $product_cats_with_meta, function ( $product_cat ) use ( $taxonomy_node ) {
 						return $taxonomy_node->id === $product_cat->_edgenet_id;
@@ -885,4 +889,27 @@ class Importer {
 		wp_set_post_terms( $post_id, $term, $taxonomy );
 	}
 
+	/**
+	 * Parse Taxonomy Path for attributes and store attribute-value array in post meta.
+	 *
+	 * @param array   $taxonomynode_path
+	 * @param Product $product
+	 * @param int     $post_id
+	 */
+	private function update_edgenet_taxonomy_attributes( $taxonomynode_path, $product, $post_id ) {
+		foreach ( $taxonomynode_path as $tax ) {
+			if ( isset( $tax->attributes ) && ! empty( $tax->attributes ) ) {
+
+				$attribute_ids = array_map( function ( $attribute ) {
+					return $attribute['BaseAttribute'];
+				}, $tax->attributes );
+
+				$attributes = edgenet()->api_adapter->attribute( $attribute_ids );
+
+				$meta = $product->get_attributes_values( $attributes );
+
+				update_post_meta( $post_id, '_category_attributes', (array) $meta );
+			}
+		}
+	}
 }
