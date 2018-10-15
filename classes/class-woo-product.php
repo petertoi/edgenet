@@ -55,11 +55,11 @@ class Woo_Product {
 
 		$data = [];
 
-		$data['features']   = get_post_meta( $post->ID, '_features', true );
-		$data['dimensions'] = get_post_meta( $post->ID, '_dimensions', true );
-		$data['other']      = get_post_meta( $post->ID, '_other', true );
-		$data['regulatory'] = get_post_meta( $post->ID, '_regulatory', true );
-		$data['category meta'] = get_post_meta( $post->ID, '_category_attributes', true );
+		$data['features']            = get_post_meta( $post->ID, '_features', true );
+		$data['category_attributes'] = get_post_meta( $post->ID, '_category_attributes', true );
+		$data['dimensions']          = get_post_meta( $post->ID, '_dimensions', true );
+		$data['other']               = get_post_meta( $post->ID, '_other', true );
+		$data['regulatory']          = get_post_meta( $post->ID, '_regulatory', true );
 
 		Template::load( 'admin/product-data-tab-panel-edgenet', $data );
 
