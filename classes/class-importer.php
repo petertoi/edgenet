@@ -632,6 +632,7 @@ class Importer {
 
 	/**
 	 * Assign Edgenet Taxonomy Term to Post
+	 * Takes an array of Taxonomy Ids, identifies the Edgenet Term, and proceeds with that one.
 	 * Generates Edgenet Taxonomy Term heirarchy from Taxonomy_Node[] if it doesn't already exist.
 	 *
 	 * @param string[] $taxonomy_node_ids Array of Taxonomy Node Ids.
@@ -897,12 +898,12 @@ class Importer {
 	 * @param int     $post_id
 	 */
 	private function update_edgenet_taxonomy_attributes( $taxonomynode_path, $product, $post_id ) {
-		foreach ( $taxonomynode_path as $tax ) {
-			if ( isset( $tax->attributes ) && ! empty( $tax->attributes ) ) {
+		foreach ( $taxonomynode_path as $taxonomynode ) {
+			if ( isset( $taxonomynode->attributes ) && ! empty( $taxonomynode->attributes ) ) {
 
 				$attribute_ids = array_map( function ( $attribute ) {
 					return $attribute['BaseAttribute'];
-				}, $tax->attributes );
+				}, $taxonomynode->attributes );
 
 				$attributes = edgenet()->api_adapter->attribute( $attribute_ids );
 
