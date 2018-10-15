@@ -656,7 +656,7 @@ class Importer {
 
 			if ( ! is_wp_error( $taxonomy_object ) && ! empty( $taxonomy_object ) ) {
 
-				$this->update_catergory_meta( $taxonomy_object, $product, $post_id );
+				$this->update_category_attributes( $taxonomy_object, $product, $post_id );
 
 				$term_args = [
 					'taxonomy'     => $egdenet_tax_id,
@@ -895,7 +895,7 @@ class Importer {
 	 * @param Product $product
 	 * @param $post_id
 	 */
-	private function update_catergory_meta( $taxonomy_object, $product, $post_id ){
+	private function update_category_attributes( $taxonomy_object, $product, $post_id ){
 
 		foreach ( $taxonomy_object as $tax ){
 			if( isset( $tax->attributes ) && ! empty( $tax->attributes  ) ) {
@@ -906,14 +906,15 @@ class Importer {
 
 				$attributes = edgenet()->api_adapter->attribute( $attribute_ids );
 
-				foreach ( $attributes as $attribute ){
-
-					$data['attribute'] = $attribute;
-					$data['value'] = $product->get_attribute_value( $attribute->id );
-
-					$meta[] = $data;
-				}
-				update_post_meta( $post_id, '_cat_meta', (array) $meta );
+				$meta = $product->get_attributes_values( $attributes );
+//				foreach ( $attributes as $attribute ){
+//
+//					$data['attribute'] = $attribute;
+//					$data['value'] = $product->get_attribute_value( $attribute->id );
+//
+//					$meta[] = $data;
+//				}
+				update_post_meta( $post_id, '_category_attributes', (array) $meta );
 			}
 		}
 
