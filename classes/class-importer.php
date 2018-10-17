@@ -415,7 +415,7 @@ class Importer {
 	private function get_post_postarr( $product ) {
 		// Setup postarr to prep for insert or update.
 		$postarr = [
-			'post_author'  => edgenet()->settings->api['import_user'],
+			'post_author'  => edgenet()->settings->import['user'],
 			'post_title'   => $product->get_attribute_value( edgenet()->settings->post_title, '' ),
 			'post_content' => $product->get_attribute_value( edgenet()->settings->post_content, '' ),
 			'post_excerpt' => $product->get_attribute_value( edgenet()->settings->post_excerpt, '' ),
@@ -790,7 +790,7 @@ class Importer {
 			}
 
 			$postarr = [
-				'post_author' => edgenet()->settings->api['import_user'],
+				'post_author' => edgenet()->settings->import['user'],
 				'post_title'  => $this->generate_document_title( $product, $attribute ),
 				'post_status' => 'publish',
 				'post_type'   => Document::POST_TYPE,

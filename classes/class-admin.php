@@ -88,6 +88,7 @@ class Admin {
 		// Actions.
 		$save_api               = filter_input( INPUT_POST, 'edgenet_save_api', FILTER_SANITIZE_STRING );
 		$save_field_map         = filter_input( INPUT_POST, 'edgenet_save_field_map', FILTER_SANITIZE_STRING );
+		$save_import            = filter_input( INPUT_POST, 'edgenet_save_import', FILTER_SANITIZE_STRING );
 		$import_requirement_set = filter_input( INPUT_POST, 'edgenet_import_requirement_set', FILTER_SANITIZE_STRING );
 		$import_products        = filter_input( INPUT_POST, 'edgenet_import_products', FILTER_SANITIZE_STRING );
 		$import_product_by_id   = filter_input( INPUT_POST, 'edgenet_import_product_by_id', FILTER_SANITIZE_STRING );
@@ -98,7 +99,7 @@ class Admin {
 		// The big if/elseif.
 		if ( ! empty( $save_api ) ) {
 			// Save API.
-			$this->save_api_settings( $settings['api'] );
+			$this->save_api_settings( $settings );
 			if (
 				edgenet()->settings->is_core_valid()
 				&& ! edgenet()->settings->is_requirement_set_valid()
@@ -108,7 +109,10 @@ class Admin {
 			}
 		} elseif ( ! empty( $save_field_map ) ) {
 			// Save Field Map.
-			$this->save_field_map_settings( $settings['field_map'] );
+			$this->save_field_map_settings( $settings );
+		} elseif ( ! empty( $save_import ) ) {
+			// Save Import.
+			$this->save_import_settings( $settings );
 		} elseif ( ! empty( $import_requirement_set ) ) {
 			// Import Requirement Set.
 			edgenet()->importer->import_requirement_set( edgenet()->settings->api['requirement_set'] );
@@ -129,17 +133,17 @@ class Admin {
 	/**
 	 * Save API Settings from $_POST
 	 *
-	 * @param array $api_settings
+	 * @param array $settings Edgenet Settings from $_POST.
 	 */
-	private function save_api_settings( $api_settings ) {
+	private function save_api_settings( $settings ) {
+		$api_settings = filter_var( $settings['api'], FILTER_REQUIRE_ARRAY );
+
 		$api_filter = [
 			'username'        => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'secret'          => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'data_owner'      => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'requirement_set' => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'taxonomy_id'     => [ 'filter' => FILTER_SANITIZE_STRING ],
-			'import_user'     => [ 'filter' => FILTER_VALIDATE_INT ],
-			'cron_control'     => [ 'filter' => FILTER_SANITIZE_STRING ],
 		];
 
 		$api = filter_var_array( $api_settings, $api_filter );
@@ -150,10 +154,11 @@ class Admin {
 	/**
 	 * Save Field Map Settings from $_POST
 	 *
-	 * @param array $field_map_settings
+	 * @param array $settings Edgenet Settings from $_POST.
 	 */
-	private function save_field_map_settings( $field_map_settings ) {
-		$field_map = filter_var( $field_map_settings, FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
+	private function save_field_map_settings( $settings ) {
+		$field_map_settings = filter_var( $settings['field_map'], FILTER_REQUIRE_ARRAY );
+		$field_map          = filter_var( $field_map_settings, FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
 		$post_map = filter_var( $field_map['post'], FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
@@ -192,4 +197,23 @@ class Admin {
 			'postmeta' => $postmeta,
 		] );
 	}
+
+	/**
+	 * Save Import Settings from $_POST
+	 *
+	 * @param array $settings Edgenet Settings from $_POST.
+	 */
+	private function save_import_settings( $settings ) {
+		$import_settings = filter_var( $settings['import'], FILTER_REQUIRE_ARRAY );
+
+		$import_filter = [
+			'user'           => [ 'filter' => FILTER_VALIDATE_INT ],
+			'is_cron_active' => [ 'filter' => FILTER_SANITIZE_STRING ],
+		];
+
+		$import = filter_var_array( $import_settings, $import_filter );
+
+		edgenet()->settings->save_import( $import );
+	}
+
 }
