@@ -139,6 +139,7 @@ class Admin {
 			'requirement_set' => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'taxonomy_id'     => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'import_user'     => [ 'filter' => FILTER_VALIDATE_INT ],
+			'cron_control'     => [ 'filter' => FILTER_SANITIZE_STRING ],
 		];
 
 		$api = filter_var_array( $api_settings, $api_filter );

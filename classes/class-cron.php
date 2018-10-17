@@ -26,7 +26,8 @@ class CRON {
 	 */
 	public function __construct() {
 		add_action( 'init', array( $this, 'schedule_product_sync' ) );
-		add_action( 'ussc_product_sync', array( $this, 'product_sync' ) );
+
+		add_action( 'ussc_product_sync', array( $this, 'scheduled_product_sync' ) );
 		add_action( 'ussc_product_sync_now', array( $this, 'product_sync' ) );
 	}
 
@@ -40,6 +41,21 @@ class CRON {
 		if ( false === wp_next_scheduled( 'ussc_product_sync' ) ) {
 			wp_schedule_event( current_time( 'timestamp' ), $recurrence, 'ussc_product_sync' );
 		}
+	}
+
+	/**
+	 * Run scheduled the sync if cron is on.
+	 *
+	 * @return \WP_Error|array|bool
+	 */
+	public function scheduled_product_sync(){
+
+		if ( isset( edgenet()->settings->api['cron_control'] ) && 'on' === edgenet()->settings->api['cron_control'] ){
+
+			return  $this->product_sync();
+		}
+
+		return false;
 	}
 
 
