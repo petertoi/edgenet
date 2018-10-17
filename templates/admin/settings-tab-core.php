@@ -71,19 +71,6 @@ use USSC_Edgenet\Template;
 				[ 'class' => 'regular-text', 'readonly' => 'readonly' ]
 			)
 		);
-
-		echo Template::render_admin_table_row(
-			__( 'Import User', 'ussc' ),
-			Template::render_select(
-				'edgenet_settings[api][import_user]',
-				'import_user',
-				edgenet()->settings->get_users_for_select(),
-				isset( edgenet()->settings->api['import_user'] )
-					? edgenet()->settings->api['import_user']
-					: '',
-				[]
-			)
-		);
 		?>
 		</tbody>
 	</table>

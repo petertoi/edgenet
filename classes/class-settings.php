@@ -23,6 +23,7 @@ class Settings {
 
 	const API_KEY             = 'edgenet_settings_api';
 	const FIELD_MAP_KEY       = 'edgenet_settings_field_map';
+	const IMPORT_KEY          = 'edgenet_settings_import';
 	const REQUIREMENT_SET_KEY = 'edgenet_settings_requirement_set';
 
 	/**
@@ -41,6 +42,13 @@ class Settings {
 		'post'     => [],
 		'postmeta' => [],
 	];
+
+	/**
+	 * Import Settings
+	 *
+	 * @var array
+	 */
+	public $import;
 
 	/**
 	 * Requirement_Set object from requirementset endpoint.
@@ -62,6 +70,7 @@ class Settings {
 	public function __construct() {
 		$this->api             = get_option( self::API_KEY );
 		$this->field_map       = get_option( self::FIELD_MAP_KEY );
+		$this->import          = get_option( self::IMPORT_KEY );
 		$this->requirement_set = get_option( self::REQUIREMENT_SET_KEY );
 	}
 
@@ -82,8 +91,6 @@ class Settings {
 				return $this->field_map['postmeta'][ $name ];
 			}
 		}
-
-		return;
 	}
 
 	/**
@@ -102,6 +109,7 @@ class Settings {
 	public function save_all() {
 		$this->save_api();
 		$this->save_field_map();
+		$this->save_import();
 		$this->save_requirement_set();
 	}
 
@@ -127,6 +135,18 @@ class Settings {
 			$this->field_map = $field_map;
 		}
 		update_option( self::FIELD_MAP_KEY, $this->field_map );
+	}
+
+	/**
+	 * Save Import settings to options table. Optionally, set the value of this variable.
+	 *
+	 * @param array|null $import (optional) Import settings.
+	 */
+	public function save_import( $import = null ) {
+		if ( isset( $import ) ) {
+			$this->import = $import;
+		}
+		update_option( self::IMPORT_KEY, $this->import );
 	}
 
 	/**
@@ -269,18 +289,38 @@ class Settings {
 			'secret',
 			'requirement_set',
 			'taxonomy_id',
-			'import_user',
 		];
 
 		$valid = true;
 
 		foreach ( $core_settings as $setting ) {
-			if ( ! isset( $this->api[ $setting ] ) ) {
+			if ( empty( $this->api[ $setting ] ) ) {
 				$valid = false;
 			}
 		}
 
 		return $valid;
+	}
+
+	/**
+	 * Check if all the required Import Settings have been set.
+	 *
+	 * @return bool
+	 */
+	public function is_import_valid() {
+		$import_settings = [
+			'user',
+		];
+
+		$valid = true;
+
+		foreach ( $import_settings as $setting ) {
+			if ( empty( $this->import[ $setting ] ) ) {
+				$valid = false;
+			}
+		}
+
+		return ( $this->is_core_valid() && false );
 	}
 
 	/**

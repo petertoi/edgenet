@@ -26,8 +26,9 @@ class CRON {
 	 */
 	public function __construct() {
 		add_action( 'init', array( $this, 'schedule_product_sync' ) );
-		add_action( 'ussc_product_sync', array( $this, 'product_sync' ) );
-		add_action( 'ussc_product_sync_now', array( $this, 'product_sync' ) );
+
+		add_action( 'ussc_product_sync', array( $this, 'maybe_sync_products' ) );
+		add_action( 'ussc_product_sync_now', array( $this, 'sync_products' ) );
 	}
 
 	/**
@@ -42,13 +43,29 @@ class CRON {
 		}
 	}
 
+	/**
+	 * Run scheduled the sync if cron is on.
+	 *
+	 * @return \WP_Error|array|bool
+	 */
+	public function maybe_sync_products() {
+		if (
+			isset( edgenet()->settings->api['is_cron_active'] )
+			&& 'on' === edgenet()->settings->api['is_cron_active']
+		) {
+			return $this->sync_products();
+		}
+
+		return false;
+	}
+
 
 	/**
 	 * Run the sync.
 	 *
 	 * @return \WP_Error|array
 	 */
-	public function product_sync() {
+	public function sync_products() {
 		$status = [
 			'import' => false,
 			'sync'   => false,
