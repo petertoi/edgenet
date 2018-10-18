@@ -751,7 +751,7 @@ class Importer {
 
 		if ( ! is_wp_error( $brand ) && ! empty( $brand ) ) {
 
-			// add the tterm to the post
+			// add the term to the post
 			$done = wp_set_object_terms( $post_id, $brand, $brand_tax_id );
 
 			return $done;
@@ -916,7 +916,7 @@ class Importer {
 			);
 		}
 		// Then we can set the taxonomy
-		wp_set_post_terms( $post_id, $term, $taxonomy );
+		wp_set_post_terms( $post_id, $value, $taxonomy );
 	}
 
 	/**
