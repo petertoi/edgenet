@@ -177,6 +177,7 @@ class Admin {
 			'_gtin'           => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_sku'            => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_model_no'       => [ 'filter' => FILTER_SANITIZE_STRING ],
+			'_brand'          => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_regular_price'  => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_weight'         => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_length'         => [ 'filter' => FILTER_SANITIZE_STRING ],
