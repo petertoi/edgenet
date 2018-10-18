@@ -102,6 +102,19 @@ use USSC_Edgenet\Template;
 	);
 
 	/**
+	 * Brand
+	 */
+	echo Template::render_admin_table_row(
+		__( 'Brand', 'ussc' ),
+		Template::render_select(
+			'edgenet_settings[field_map][postmeta][_brand]',
+			'_brand',
+			edgenet()->settings->get_attributes_for_select(),
+			edgenet()->settings->_brand,
+			[]
+		)
+	);
+	/**
 	 * Regular Price
 	 */
 	echo Template::render_admin_table_row(

@@ -8,7 +8,7 @@
 
 namespace USSC_Edgenet\Taxonomies;
 
-use USSC_Edgenet\Post_Types\Document;
+use USSC_Edgenet\Edgenet;
 
 /**
  * Class Doc_Type
@@ -19,27 +19,26 @@ use USSC_Edgenet\Post_Types\Document;
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
-class Doc_Type {
+class Brand {
 
 	/**
 	 * Taxonomy slug.
 	 */
-	const TAXONOMY = 'doc_type';
+	const TAXONOMY = 'brand';
 
 	/**
 	 * Rewrite slug.
 	 */
-	const REWRITE = 'type';
+	const REWRITE = 'brand';
 
 	/**
 	 * Doc_Type constructor.
 	 */
 	public function __construct() {
 		add_action( 'init', [ $this, 'register_document_type_taxonomy' ] );
+		add_filter( 'manage_product_posts_columns', [ $this, 'filter_posts_columns' ] );
 
-		add_filter( 'manage_' . Document::POST_TYPE . '_posts_columns', [ $this, 'filter_posts_columns' ] );
-
-		add_action( 'manage_' . Document::POST_TYPE . '_posts_custom_column',[ $this,  'column_content' ], 10, 2);
+		add_action( 'manage_product_posts_custom_column',[ $this,  'column_content' ], 9999, 2);
 	}
 
 	/**
@@ -48,9 +47,9 @@ class Doc_Type {
 	public function register_document_type_taxonomy() {
 		register_taxonomy(
 			self::TAXONOMY,
-			Document::POST_TYPE,
+			'product',
 			[
-				'label'        => __( 'Doc Types', 'ussc' ),
+				'label'        => __( 'Brand', 'ussc' ),
 				'rewrite'      => [ 'slug' => self::REWRITE ],
 				'hierarchical' => false,
 			]
@@ -58,7 +57,7 @@ class Doc_Type {
 	}
 
 	public function filter_posts_columns( $columns ) {
-		$columns['type'] = __( 'Type' );
+		$columns['brand'] = __( 'Brand' );
 		$date = $columns['date'];
 		unset( $columns['date'] );
 		$columns['date'] = $date;
@@ -69,12 +68,11 @@ class Doc_Type {
 
 	function column_content( $column, $post_id ) {
 		// Image column
-		if ( 'type' === $column ) {
+		if ( 'brand' === $column ) {
 			$terms = wp_get_post_terms( $post_id, self::TAXONOMY );
 			foreach ( $terms as $term ){
 				echo $term->name . '<br />';
 			}
 		}
 	}
-
 }

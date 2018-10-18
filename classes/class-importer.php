@@ -66,7 +66,7 @@ class Importer {
 	/**
 	 * Import a set of Products
 	 *
-	 * @param array $product_ids  Specific Product ID(s) to import. Leave null for all products.
+	 * @param array $product_ids Specific Product ID(s) to import. Leave null for all products.
 	 * @param bool  $force_update Force update products regardless of verified date.
 	 *
 	 * @return array|\WP_Error Array of Product IDs or WP_Error if another import already running.
@@ -131,7 +131,7 @@ class Importer {
 	/**
 	 * Import a single Product
 	 *
-	 * @param int  $product_id   The product ID to import.
+	 * @param int  $product_id The product ID to import.
 	 * @param bool $force_update Whether to force import/update data regardless of verified_date.
 	 *
 	 * @return int|\WP_Error The Post ID on success or \WP_Error if failure.
@@ -243,6 +243,10 @@ class Importer {
 		// Set Product Categories.
 		$taxonomy_node_ids = $product->taxonomy_node_ids;
 		$this->update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id );
+
+
+		$this->update_edgenet_brand( $product, $post_id );
+
 	}
 
 	/**
@@ -474,9 +478,9 @@ class Importer {
 	/**
 	 * Generate an Edgenet Image URL from Asset ID
 	 *
-	 * @param string $asset_id  Asset ID.
+	 * @param string $asset_id Asset ID.
 	 * @param string $file_type Options are [jpg, png].
-	 * @param int    $size      Define size of square in pixels that the image shall fit within.
+	 * @param int    $size Define size of square in pixels that the image shall fit within.
 	 *
 	 * @return string The URL of the image on Edgenet.
 	 */
@@ -521,9 +525,9 @@ class Importer {
 	 *
 	 * @link   http://wordpress.stackexchange.com/a/145349/26350
 	 *
-	 * @param string $title    Attachment title.
-	 * @param string $url      URL of image to import.
-	 * @param int    $post_id  Post ID to attach image to.
+	 * @param string $title Attachment title.
+	 * @param string $url URL of image to import.
+	 * @param int    $post_id Post ID to attach image to.
 	 * @param string $file_ext The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
 	 *
 	 * @return int|\WP_Error $attachment_id The ID of the Attachment post or \WP_Error if failure.
@@ -597,9 +601,9 @@ class Importer {
 	 * Bulk Sideload Assets by Attribute Group.
 	 *
 	 * @param string  $attribute_group_id The Attribute Group ID for Digital Assets.
-	 * @param Product $product            The Product.
-	 * @param int     $post_id            The Post ID.
-	 * @param string  $file_ext           The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
+	 * @param Product $product The Product.
+	 * @param int     $post_id The Post ID.
+	 * @param string  $file_ext The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
 	 *
 	 * @return int[] Array of Attachment IDs sideloaded and attached to the post.
 	 */
@@ -636,7 +640,7 @@ class Importer {
 	 * Generates Edgenet Taxonomy Term heirarchy from Taxonomy_Node[] if it doesn't already exist.
 	 *
 	 * @param string[] $taxonomy_node_ids Array of Taxonomy Node Ids.
-	 * @param int      $post_id           The Product's \WP_Post id.
+	 * @param int      $post_id The Product's \WP_Post id.
 	 */
 	private function update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id ) {
 		$egdenet_tax_id = Taxonomies\Edgenet_Cat::TAXONOMY;
@@ -732,11 +736,36 @@ class Importer {
 	}
 
 	/**
+	 * Assign Edgenet Brand Term to Post
+	 *
+	 * @param Product $product proctuct being imported.
+	 * @param int     $post_id The Product's \WP_Post id.
+	 *
+	 * @return int of term or 0 if none
+	 * @return array|int|\WP_Error|bool
+	 */
+	private function update_edgenet_brand( $product, $post_id ) {
+		$brand_tax_id = Taxonomies\brand::TAXONOMY;
+		// the brand anme
+		$brand = $product->get_attribute_value( edgenet()->settings->_brand, '' );
+
+		if ( ! is_wp_error( $brand ) && ! empty( $brand ) ) {
+
+			// add the tterm to the post
+			$done = wp_set_object_terms( $post_id, $brand, $brand_tax_id );
+
+			return $done;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Update the Product image gallery.
 	 *
 	 * @param string  $attribute_group_id The Edgenet Attribute Group ID.
-	 * @param Product $product            The Edgenet Product.
-	 * @param int     $post_id            The WordPress \WP_Post ID of the WooCommerce product.
+	 * @param Product $product The Edgenet Product.
+	 * @param int     $post_id The WordPress \WP_Post ID of the WooCommerce product.
 	 *
 	 * @return int[]
 	 */
@@ -837,9 +866,9 @@ class Importer {
 	/**
 	 * Generate standardized Document title based on the Product and suffix (Doc_Type name).
 	 *
-	 * @param Product   $product   The Edgenet Product
+	 * @param Product   $product The Edgenet Product
 	 * @param Attribute $attribute The Edgenet Attribute
-	 * @param string    $delim     Delimeter between Product identifier and document description.
+	 * @param string    $delim Delimeter between Product identifier and document description.
 	 *
 	 * @return string
 	 */
@@ -867,8 +896,8 @@ class Importer {
 	 * Set specified taxonomy term to the incoming post object. If
 	 * the term doesn't already exist in the database, it will be created.
 	 *
-	 * @param    int    $post_id  The post to which we're adding the taxonomy term.
-	 * @param    string $value    The name of the taxonomy term.
+	 * @param    int    $post_id The post to which we're adding the taxonomy term.
+	 * @param    string $value The name of the taxonomy term.
 	 * @param    string $taxonomy The name of the taxonomy.
 	 *
 	 * @access   private
