@@ -67,23 +67,19 @@ use USSC_Edgenet\Template;
 		<?php
 		// echo Template::render_admin_table_row(
 		// __( 'Images', 'ussc' ),
-		// get_submit_button( __( 'Delete all', 'ussc' ), 'secondary', 'edgenet_delete_images' ),
-		// [ 'tr' => [ 'class' => 'danger', 'id' => '' ] ]
+		// get_submit_button( __( 'Delete all', 'ussc' ), 'secondary', 'edgenet_delete_images' )
 		// );
 		echo Template::render_admin_table_row(
 			__( 'Delete Products', 'ussc' ),
-			get_submit_button( __( 'Delete Products', 'ussc' ), 'alert', 'edgenet_action[delete_products]' ),
-			[ 'tr' => [ 'class' => 'danger', 'id' => '' ] ]
+			get_submit_button( __( 'Delete Products', 'ussc' ), 'alert', 'edgenet_action[delete_products]' )
 		);
 		echo Template::render_admin_table_row(
 			__( 'Delete Documents', 'ussc' ),
-			get_submit_button( __( 'Delete Documents', 'ussc' ), 'alert', 'edgenet_action[delete_documents]' ),
-			[ 'tr' => [ 'class' => 'danger', 'id' => '' ] ]
+			get_submit_button( __( 'Delete Documents', 'ussc' ), 'alert', 'edgenet_action[delete_documents]' )
 		);
 		echo Template::render_admin_table_row(
 			__( 'Delete All', 'ussc' ),
-			get_submit_button( __( 'Delete All', 'ussc' ), 'alert', 'edgenet_action[delete_all]' ),
-			[ 'tr' => [ 'class' => 'danger', 'id' => '' ] ]
+			get_submit_button( __( 'Delete All', 'ussc' ), 'alert', 'edgenet_action[delete_all]' )
 		);
 		?>
 		</tbody>
