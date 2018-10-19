@@ -12,21 +12,15 @@
     border: solid 2px #ccc;
     tr {
       border: solid 1px #ccc;
+      th,
+      td {
+        padding: 12px;
+      }
+      th {
+        text-align: right;
+        width: 30%;
+        vertical-align: top;
+      }
     }
-    th,
-    td {
-      padding: 12px;
-    }
-    th {
-      text-align: right;
-      width: 30%;
-      vertical-align: top;
-    }
-  }
-}
-tr.danger{
-  input.button{
-    color: #fff;
-    background-color: #ff0000;
   }
 }
