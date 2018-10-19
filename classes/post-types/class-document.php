@@ -46,7 +46,6 @@ class Document {
 	 * Register the Document post type.
 	 */
 	public function register_document_post_type() {
-		include_once(ABSPATH.'wp-admin/includes/plugin.php');
 		/**
 		 * Document post type labels.
 		 */
@@ -91,7 +90,7 @@ class Document {
 			'show_in_nav_menus'   => true,
 			'show_in_admin_bar'   => false,
 			// Prevent Users from Creating/Editing/Deleting Documents
-			 'map_meta_cap'        => true,
+			'map_meta_cap'        => true,
 			'capability_type'     => 'post',
 			'capabilities'        => array(
 				'create_posts' => 'do_not_allow',
