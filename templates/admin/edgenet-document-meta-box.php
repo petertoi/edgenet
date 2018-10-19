@@ -1,6 +1,6 @@
 <?php
 /**
- * Filename document-meta-box.php
+ * Filename local-document-meta-box.php
  *
  * @package ussc
  * @author  Peter Toi <peter@petertoi.com>
