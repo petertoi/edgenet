@@ -309,7 +309,7 @@ use USSC_Edgenet\Template;
 	</tbody>
 </table>
 
-<?php submit_button( __( 'Save Field Map', 'ussc' ), 'primary', 'edgenet_save_field_map' ); ?>
+<?php submit_button( __( 'Save Field Map', 'ussc' ), 'primary', 'edgenet_action[save_field_map]' ); ?>
 
 <?php if ( edgenet()->debug ) : ?>
 	<h2><?php esc_html_e( 'Debug', 'ussc' ); ?></h2>
