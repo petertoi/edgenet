@@ -643,7 +643,6 @@ class Importer {
 	 * @param int      $post_id           The Product's \WP_Post id.
 	 */
 	private function update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id ) {
-		$egdenet_tax_id = Taxonomies\Edgenet_Cat::TAXONOMY;
 		if ( ! empty( $taxonomy_node_ids ) ) {
 
 			// Iterate over taxonomy nodes until we find the right one.
@@ -665,7 +664,7 @@ class Importer {
 				$this->update_edgenet_taxonomy_attributes( $taxonomynode_path, $product, $post_id );
 
 				$term_args = [
-					'taxonomy'     => $egdenet_tax_id,
+					'taxonomy'     => Edgenet_Cat::TAXONOMY,
 					'hide_empty'   => false,
 					'meta_key'     => '_edgenet_id', /* phpcs:ignore */
 					'meta_compare' => 'EXISTS',
@@ -696,19 +695,17 @@ class Importer {
 
 						$term = wp_insert_term(
 							$taxonomy_node->description,
-							$egdenet_tax_id,
+							Edgenet_Cat::TAXONOMY,
 							[
 								'parent' => ( ! empty( $parent ) ) ? $parent->term_id : 0,
 							]
 						);
 
 						if ( ! is_wp_error( $term ) ) {
-
 							add_term_meta( $term['term_id'], '_edgenet_id', $taxonomy_node->id, true );
 							add_term_meta( $term['term_id'], '_edgenet_id_' . $taxonomy_node->id, $taxonomy_node->id, true );
 							add_term_meta( $term['term_id'], '_edgenet_parent_id', $taxonomy_node->parent_id, true );
 							add_term_meta( $term['term_id'], '_edgenet_taxonomy_id', $taxonomy_node->taxonomy_id, true );
-
 						}
 
 						// Refresh list of Product Categories after insert.
@@ -729,7 +726,7 @@ class Importer {
 
 				if ( ! empty( $leaf_term ) ) {
 					$leaf_term = array_shift( $leaf_term );
-					wp_set_object_terms( $post_id, $leaf_term->term_id, $egdenet_tax_id );
+					wp_set_object_terms( $post_id, $leaf_term->term_id, Edgenet_Cat::TAXONOMY );
 				}
 			}
 		}
@@ -745,15 +742,13 @@ class Importer {
 	 * @return array|int|\WP_Error|bool
 	 */
 	private function update_edgenet_brand( $product, $post_id ) {
-		$brand_taxonomy = Brand::TAXONOMY;
-
 		// Get Brand Name
 		$brand = $product->get_attribute_value( edgenet()->settings->_brand );
 
 		if ( ! is_wp_error( $brand ) && ! empty( $brand ) ) {
 
 			// add the term to the post
-			$done = wp_set_object_terms( $post_id, $brand, $brand_taxonomy );
+			$done = wp_set_object_terms( $post_id, $brand, Brand::TAXONOMY );
 
 			return $done;
 		}
@@ -917,7 +912,7 @@ class Importer {
 			);
 		}
 		// Then we can set the taxonomy
-		wp_set_post_terms( $post_id, $term, $taxonomy );
+		wp_set_post_terms( $post_id, $value, $taxonomy );
 	}
 
 	/**
