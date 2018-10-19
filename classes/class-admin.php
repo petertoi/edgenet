@@ -7,7 +7,7 @@
  */
 
 namespace USSC_Edgenet;
-use USSC_Edgenet\Taxonomies\Doc_Type;
+
 use USSC_Edgenet\Post_Types;
 
 /**
@@ -96,10 +96,10 @@ class Admin {
 		$import_product_by_id   = filter_input( INPUT_POST, 'edgenet_import_product_by_id', FILTER_SANITIZE_STRING );
 		$map_categories         = filter_input( INPUT_POST, 'edgenet_map_categories', FILTER_SANITIZE_STRING );
 
-		$delete_images = filter_input( INPUT_POST, 'edgenet_delete_images', FILTER_SANITIZE_STRING );
-		$delete_product        = filter_input( INPUT_POST, 'edgenet_delete_product', FILTER_SANITIZE_STRING );
-		$delete_docs   = filter_input( INPUT_POST, 'edgenet_delete_docs', FILTER_SANITIZE_STRING );
-		$delete_all         = filter_input( INPUT_POST, 'edgenet_delete_all', FILTER_SANITIZE_STRING );
+		$delete_images  = filter_input( INPUT_POST, 'edgenet_delete_images', FILTER_SANITIZE_STRING );
+		$delete_product = filter_input( INPUT_POST, 'edgenet_delete_product', FILTER_SANITIZE_STRING );
+		$delete_docs    = filter_input( INPUT_POST, 'edgenet_delete_docs', FILTER_SANITIZE_STRING );
+		$delete_all     = filter_input( INPUT_POST, 'edgenet_delete_all', FILTER_SANITIZE_STRING );
 
 		$settings = filter_input( INPUT_POST, 'edgenet_settings', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
@@ -145,7 +145,7 @@ class Admin {
 			$this->delete_stuff( 'docs' );
 		} elseif ( ! empty( $delete_all ) ) {
 			// delete_all.
-		 $this->delete_stuff( 'all' );
+			$this->delete_stuff( 'all' );
 		}
 	}
 
@@ -237,10 +237,10 @@ class Admin {
 		edgenet()->settings->save_import( $import );
 	}
 
-	private function delete_stuff( $stuff_type ){
+	private function delete_stuff( $stuff_type ) {
 
 
-		switch ( $stuff_type ){
+		switch ( $stuff_type ) {
 			case 'docs':
 				$this->delete_docs();
 				break;
@@ -260,28 +260,47 @@ class Admin {
 
 	}
 
-	private function delete_docs(){
-		$posts = get_posts( array( 'post_type' => Post_Types\Document::POST_TYPE, 'numberposts' => -1));
-		foreach( $posts as $post ) {
+	private function delete_docs() {
+		$posts = get_posts( [
+			'post_type'   => Post_Types\Document::POST_TYPE,
+			'numberposts' => - 1,
+			'meta_query'  => [
+				[
+					'key'     => '_edgenet_id',
+					'compare' => 'EXISTS' // this should work...
+				]
+			],
+		] );
+		foreach ( $posts as $post ) {
 			$attachment_id = get_post_meta( $post->ID, '_edgenet_wp_attachment_id', true );
-			$f = wp_delete_attachment( $attachment_id, true );
+			$f             = wp_delete_attachment( $attachment_id, true );
 			// Delete's each post.
-			$r = wp_delete_post( $post->ID, true);
+			$r = wp_delete_post( $post->ID, true );
 		}
 	}
-	private function delete_products(){
-		$posts = get_posts( array( 'post_type' => 'product', 'numberposts' => -1));
-		foreach( $posts as $post ) {
+
+	private function delete_products() {
+		$posts = get_posts( [
+			'post_type'   => 'product',
+			'numberposts' => - 1,
+			'meta_query'  => [
+				[
+					'key'     => '_edgenet_id',
+					'compare' => 'EXISTS' // this should work...
+				]
+			],
+		] );
+		foreach ( $posts as $post ) {
 			$thumbnail_id = get_post_meta( $post->ID, '_thumbnail_id', true );
-			$f = wp_delete_attachment( $thumbnail_id, true );
+			$f            = wp_delete_attachment( $thumbnail_id, true );
 
 			$gallery_ids = explode( ',', get_post_meta( $post->ID, '_product_image_gallery', true ) );
-			foreach ( $gallery_ids as $id ){
+			foreach ( $gallery_ids as $id ) {
 
 				$f = wp_delete_attachment( $id, true );
 			}
 			// Delete's each post.
-			$r = wp_delete_post( $post->ID, true);
+			$r = wp_delete_post( $post->ID, true );
 		}
 	}
 }
