@@ -75,7 +75,7 @@ use USSC_Edgenet\Template;
 		</tbody>
 	</table>
 
-	<?php submit_button( __( 'Save API Settings', 'ussc' ), 'primary', 'edgenet_save_api' ); ?>
+	<?php submit_button( __( 'Save API Settings', 'ussc' ), 'primary', 'edgenet_action[save_api]' ); ?>
 
 <?php if ( edgenet()->debug ) : ?>
 	<h2><?php esc_html_e( 'Debug', 'ussc' ); ?></h2>

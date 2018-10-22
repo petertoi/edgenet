@@ -33,11 +33,11 @@ use USSC_Edgenet\Template;
 	echo Template::render_admin_table_row(
 		__( 'Enable Automatic Import', 'ussc' ),
 		Template::render_select(
-			'edgenet_settings[import][is_cron_active]',
-			'is_cron_active',
-			[ [ 'value' => 'on', 'label' => 'On' ], [ 'value' => 'off', 'label' => 'Off' ] ], // phpcs:ignore
-			isset( edgenet()->settings->import['is_cron_active'] )
-				? edgenet()->settings->import['is_cron_active']
+			'edgenet_settings[import][is_cron_enabled]',
+			'is_cron_enabled',
+			[ [ 'value' => 'on', 'label' => __('On', 'ussc') ], [ 'value' => 'off', 'label' => __('Off', 'ussc')  ] ], // phpcs:ignore
+			isset( edgenet()->settings->import['is_cron_enabled'] )
+				? edgenet()->settings->import['is_cron_enabled']
 				: 'off',
 			[]
 		)
@@ -47,7 +47,7 @@ use USSC_Edgenet\Template;
 	</tbody>
 </table>
 
-<?php submit_button( __( 'Save Import Settings', 'ussc' ), 'primary', 'edgenet_save_import' ); ?>
+<?php submit_button( __( 'Save Import Settings', 'ussc' ), 'primary', 'edgenet_action[save_import]' ); ?>
 
 <?php if ( edgenet()->debug ) : ?>
 	<h2><?php esc_html_e( 'Debug', 'ussc' ); ?></h2>

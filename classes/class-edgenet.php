@@ -7,6 +7,7 @@
 namespace USSC_Edgenet;
 
 use USSC_Edgenet\Post_Types\Document;
+use USSC_Edgenet\Taxonomies\Brand;
 use USSC_Edgenet\Taxonomies\Doc_Type;
 use USSC_Edgenet\Taxonomies\Edgenet_Cat;
 
@@ -97,6 +98,7 @@ class Edgenet {
 		new Document();
 		new Doc_Type();
 		new Edgenet_Cat();
+		new Brand();
 
 		// Init Settings.
 		$this->settings = new Settings();

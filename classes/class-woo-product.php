@@ -36,12 +36,12 @@ class Woo_Product {
 	 */
 	public function add_product_data_tabs( $tabs ) {
 
-		$tabs[] = array(
+		$tabs[] = [
 			'label'    => __( 'Edgenet' ),
 			'target'   => 'ussc_edgenet',
-			'class'    => array(),
+			'class'    => [],
 			'priority' => 100,
-		);
+		];
 
 		return $tabs;
 	}

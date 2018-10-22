@@ -25,51 +25,54 @@ class CRON {
 	 * CRON constructor.
 	 */
 	public function __construct() {
-		add_action( 'init', array( $this, 'schedule_product_sync' ) );
+		add_action( 'init', [ $this, 'maybe_schedule_product_sync' ] );
 
-		add_action( 'ussc_product_sync', array( $this, 'maybe_sync_products' ) );
-		add_action( 'ussc_product_sync_now', array( $this, 'sync_products' ) );
+		add_action( 'edgenet_forced_product_sync', [ $this, 'sync_products' ] );
+		add_action( 'edgenet_scheduled_product_sync', [ $this, 'sync_products' ] );
 	}
 
 	/**
-	 * Schedules the sync.
+	 * Schedules or un-schedules the product sync
+	 * Looks at the is_cron_enabled flag, as well as the existence of the cron event before schedule/unschedule.
 	 *
 	 * @return void
 	 */
-	public function schedule_product_sync() {
-		$recurrence = $this->validate_recurrence( self::RECURRENCE );
-		if ( false === wp_next_scheduled( 'ussc_product_sync' ) ) {
-			wp_schedule_event( current_time( 'timestamp' ), $recurrence, 'ussc_product_sync' );
+	public function maybe_schedule_product_sync() {
+		$next_scheduled = wp_next_scheduled( 'edgenet_scheduled_product_sync' );
+
+		if ( $this->is_cron_enabled() ) {
+			if ( false === $next_scheduled ) {
+				$recurrence = $this->validate_recurrence( self::RECURRENCE );
+				wp_schedule_event( current_time( 'timestamp' ), $recurrence, 'edgenet_scheduled_product_sync' );
+			}
+		} else {
+			if ( false !== $next_scheduled ) {
+				wp_unschedule_event( $next_scheduled, 'edgenet_scheduled_product_sync' );
+			}
 		}
 	}
-
-	/**
-	 * Run scheduled the sync if cron is on.
-	 *
-	 * @return \WP_Error|array|bool
-	 */
-	public function maybe_sync_products() {
-		if (
-			isset( edgenet()->settings->api['is_cron_active'] )
-			&& 'on' === edgenet()->settings->api['is_cron_active']
-		) {
-			return $this->sync_products();
-		}
-
-		return false;
-	}
-
 
 	/**
 	 * Run the sync.
 	 *
+	 * @param bool $force Whether to trigger the sync regardless of the `is_cron_enabled` setting.
+	 *
 	 * @return \WP_Error|array
 	 */
-	public function sync_products() {
+	public function sync_products( $force = false ) {
 		$status = [
 			'import' => false,
 			'sync'   => false,
 		];
+
+		if ( ! $force && ! $this->is_cron_enabled() ) {
+			$status['import'] = new \WP_Error(
+				'ussc-edgenet-import-error',
+				__( 'Automatic import is disabled.', 'ussc' )
+			);
+
+			return $status;
+		}
 
 		$status['import'] = edgenet()->importer->import_products();
 
@@ -102,4 +105,17 @@ class CRON {
 		}
 	}
 
+	/**
+	 * Helper function for inquiring if the Edgenet Import Cron is enabled or not.
+	 *
+	 * @return bool
+	 */
+	private function is_cron_enabled() {
+		$enabled = (
+			isset( edgenet()->settings->import['is_cron_enabled'] )
+			&& 'on' === edgenet()->settings->import['is_cron_enabled']
+		);
+
+		return $enabled;
+	}
 }

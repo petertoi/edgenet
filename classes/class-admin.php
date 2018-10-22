@@ -8,6 +8,8 @@
 
 namespace USSC_Edgenet;
 
+use USSC_Edgenet\Post_Types\Document;
+
 /**
  * Class Admin
  *
@@ -85,48 +87,66 @@ class Admin {
 
 		check_admin_referer( 'ussc-edgenet' );
 
-		// Actions.
-		$save_api               = filter_input( INPUT_POST, 'edgenet_save_api', FILTER_SANITIZE_STRING );
-		$save_field_map         = filter_input( INPUT_POST, 'edgenet_save_field_map', FILTER_SANITIZE_STRING );
-		$save_import            = filter_input( INPUT_POST, 'edgenet_save_import', FILTER_SANITIZE_STRING );
-		$import_requirement_set = filter_input( INPUT_POST, 'edgenet_import_requirement_set', FILTER_SANITIZE_STRING );
-		$import_products        = filter_input( INPUT_POST, 'edgenet_import_products', FILTER_SANITIZE_STRING );
-		$import_product_by_id   = filter_input( INPUT_POST, 'edgenet_import_product_by_id', FILTER_SANITIZE_STRING );
-		$map_categories         = filter_input( INPUT_POST, 'edgenet_map_categories', FILTER_SANITIZE_STRING );
+		// Find out which action was submitted.
+		$actions = filter_input( INPUT_POST, 'edgenet_action', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
+		$action  = key( $actions );
 
 		$settings = filter_input( INPUT_POST, 'edgenet_settings', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
-		// The big if/elseif.
-		if ( ! empty( $save_api ) ) {
-			// Save API.
-			$this->save_api_settings( $settings );
-			if (
-				edgenet()->settings->is_core_valid()
-				&& ! edgenet()->settings->is_requirement_set_valid()
-			) {
-				// Update requirement set, if it hasn't already been set.
-				edgenet()->importer->import_requirement_set( edgenet()->settings->requirement_set );
-			}
-		} elseif ( ! empty( $save_field_map ) ) {
-			// Save Field Map.
-			$this->save_field_map_settings( $settings );
-		} elseif ( ! empty( $save_import ) ) {
-			// Save Import.
-			$this->save_import_settings( $settings );
-		} elseif ( ! empty( $import_requirement_set ) ) {
-			// Import Requirement Set.
-			edgenet()->importer->import_requirement_set( edgenet()->settings->api['requirement_set'] );
-		} elseif ( ! empty( $import_products ) ) {
-			// Import Products.
-			wp_schedule_single_event( time(), 'ussc_product_sync_now' );
+		switch ( $action ) {
+			case 'save_api':
+				$this->save_api_settings( $settings );
+				if (
+					edgenet()->settings->is_core_valid()
+					&& ! edgenet()->settings->is_requirement_set_valid()
+				) {
+					// API settings valid? Requirement set empty? Let's update it and save a step. Bonus!
+					edgenet()->importer->import_requirement_set( edgenet()->settings->requirement_set );
+				}
 
-		} elseif ( ! empty( $import_product_by_id ) ) {
-			// Import Product By ID.
-			$product_id = filter_input( INPUT_POST, 'edgenet_import_product_id', FILTER_SANITIZE_STRING );
-			edgenet()->importer->import_products( [ $product_id ], true );
-		} elseif ( ! empty( $map_categories ) ) {
-			// Map Categories.
-			edgenet()->importer->sync_edgenet_cat_to_product_cat();
+				break;
+			case 'save_field_map':
+				$this->save_field_map_settings( $settings );
+
+				break;
+			case 'save_import':
+				$this->save_import_settings( $settings );
+				break;
+			case 'import_requirement_set':
+				edgenet()->importer->import_requirement_set( edgenet()->settings->api['requirement_set'] );
+
+				break;
+			case 'import_products':
+				wp_schedule_single_event( time(), 'edgenet_forced_product_sync', [ 'force' => true ] );
+				wp_cron();
+				break;
+			case 'import_product_by_id':
+				$product_id = filter_input( INPUT_POST, 'edgenet_import_product_id', FILTER_SANITIZE_STRING );
+				edgenet()->importer->import_products( [ $product_id ], true );
+
+				break;
+			case 'map_categories':
+				edgenet()->importer->sync_edgenet_cat_to_product_cat();
+
+				break;
+			case 'delete_images':
+				$this->delete_edgenet_content( 'images' );
+
+				break;
+			case 'delete_products':
+				$this->delete_edgenet_content( 'products' );
+
+				break;
+			case 'delete_docs':
+				$this->delete_edgenet_content( 'docs' );
+
+				break;
+			case 'delete_all':
+				$this->delete_edgenet_content( 'all' );
+
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -177,6 +197,7 @@ class Admin {
 			'_gtin'           => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_sku'            => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_model_no'       => [ 'filter' => FILTER_SANITIZE_STRING ],
+			'_brand'          => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_regular_price'  => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_weight'         => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'_length'         => [ 'filter' => FILTER_SANITIZE_STRING ],
@@ -208,8 +229,8 @@ class Admin {
 		$import_settings = filter_var( $settings['import'], FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
 		$import_filter = [
-			'user'           => [ 'filter' => FILTER_VALIDATE_INT ],
-			'is_cron_active' => [ 'filter' => FILTER_SANITIZE_STRING ],
+			'user'            => [ 'filter' => FILTER_VALIDATE_INT ],
+			'is_cron_enabled' => [ 'filter' => FILTER_SANITIZE_STRING ],
 		];
 
 		$import = filter_var_array( $import_settings, $import_filter );
@@ -217,4 +238,78 @@ class Admin {
 		edgenet()->settings->save_import( $import );
 	}
 
+	/**
+	 * Wrapper that handles all content deletions.
+	 *
+	 * // TODO: Check permissions before deleting?
+	 *
+	 * @param string $content_type The type of content to delete.
+	 */
+	private function delete_edgenet_content( $content_type ) {
+		switch ( $content_type ) {
+			case 'docs':
+				$this->delete_docs();
+				break;
+			case 'images':
+				$this->delete_images();
+				break;
+			case 'products':
+				$this->delete_products();
+				break;
+			case 'all':
+				$this->delete_products();
+				$this->delete_docs();
+				break;
+			default:
+				break;
+		}
+
+	}
+
+	/**
+	 * Delete all Document posts and attachments associated with PDFs downloaded from Edgenet.
+	 */
+	private function delete_docs() {
+		$posts = get_posts( [
+			'post_type'   => Document::POST_TYPE,
+			'numberposts' => - 1,
+		] );
+
+		foreach ( $posts as $post ) {
+			$attachment_id = get_post_meta( $post->ID, '_edgenet_wp_attachment_id', true );
+			$f             = wp_delete_attachment( $attachment_id, true );
+			// Delete's each post.
+			$r = wp_delete_post( $post->ID, true );
+		}
+	}
+
+	/**
+	 * Delete all images downloaded from Edgenet.
+	 */
+	private function delete_images() {
+
+	}
+
+	/**
+	 * Delete all Product posts and associated images
+	 */
+	private function delete_products() {
+		$posts = get_posts( [
+			'post_type'   => 'product',
+			'numberposts' => - 1,
+		] );
+
+		foreach ( $posts as $post ) {
+			$thumbnail_id = get_post_meta( $post->ID, '_thumbnail_id', true );
+			$f            = wp_delete_attachment( $thumbnail_id, true );
+
+			$gallery_ids = explode( ',', get_post_meta( $post->ID, '_product_image_gallery', true ) );
+			foreach ( $gallery_ids as $id ) {
+
+				$f = wp_delete_attachment( $id, true );
+			}
+			// Delete's each post.
+			$r = wp_delete_post( $post->ID, true );
+		}
+	}
 }

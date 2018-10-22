@@ -148,7 +148,7 @@ class Edgenet_Cat {
 	 * @return array
 	 */
 	public function get_term_tree( $parent, $categories ) {
-		$result = array();
+		$result = [];
 		foreach ( $categories as $category ) {
 			if ( $parent === $category->category_parent ) {
 				$category->children = $this->get_term_tree( $category->cat_ID, $categories );

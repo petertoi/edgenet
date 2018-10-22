@@ -12,6 +12,7 @@ use USSC_Edgenet\Item\Attribute;
 use USSC_Edgenet\Item\Attribute_Group;
 use USSC_Edgenet\Item\Product;
 use USSC_Edgenet\Post_Types\Document;
+use USSC_Edgenet\Taxonomies\Brand;
 use USSC_Edgenet\Taxonomies\Doc_Type;
 use USSC_Edgenet\Taxonomies\Edgenet_Cat;
 
@@ -250,6 +251,9 @@ class Importer {
 		// Set Product Categories.
 		$taxonomy_node_ids = $product->taxonomy_node_ids;
 		$this->update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id );
+
+		// Set Brand.
+		$this->update_edgenet_brand( $product, $post_id );
 	}
 
 	/**
@@ -283,42 +287,17 @@ class Importer {
 
 			$status['product_cats'] = $linked_product_term_ids;
 
-//			$linked_product_term_children_ids = get_term_children( $linked_product_term_ids, 'product_cat' );
-
-//			$not_found = true;
-
-//			foreach ( $linked_product_term_children_ids as $child_id ) {
-//				$child_term = get_term_by( 'id', $child_id, self::TARGET_TAX );
-//				// let look for a match exit if found
-//				if ( $child_term->name === $edgenet_term->name ) {
-//					$not_found = false;
-//					continue;
-//				}
-//			}
-
-			// not found so lets add the tax
-//			if ( $not_found ) {
-//				$child_term = wp_insert_term(
-//					$edgenet_term->name,
-//					self::TARGET_TAX,
-//					array(
-//						'slug'   => strtolower( str_ireplace( ' ', '-', $edgenet_term->slug ) ),
-//						'parent' => $linked_product_term_ids
-//					)
-//				);
-//			}
-
 			// now add the product term to all posts that had the edgenet term
 			$post_args = [
 				'posts_per_page' => - 1,
 				'post_type'      => 'product',
-				'tax_query'      => array(
-					array(
+				'tax_query'      => [
+					[
 						'taxonomy' => Edgenet_Cat::TAXONOMY,
 						'field'    => 'term_id',
 						'terms'    => $edgenet_term->term_id,
-					)
-				),
+					]
+				],
 				'fields'         => 'ids',
 			];
 
@@ -656,7 +635,6 @@ class Importer {
 	 * @param int      $post_id           The Product's \WP_Post id.
 	 */
 	private function update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id ) {
-		$egdenet_tax_id = Taxonomies\Edgenet_Cat::TAXONOMY;
 		if ( ! empty( $taxonomy_node_ids ) ) {
 
 			// Iterate over taxonomy nodes until we find the right one.
@@ -678,7 +656,7 @@ class Importer {
 				$this->update_edgenet_taxonomy_attributes( $taxonomynode_path, $product, $post_id );
 
 				$term_args = [
-					'taxonomy'     => $egdenet_tax_id,
+					'taxonomy'     => Edgenet_Cat::TAXONOMY,
 					'hide_empty'   => false,
 					'meta_key'     => '_edgenet_id', /* phpcs:ignore */
 					'meta_compare' => 'EXISTS',
@@ -709,19 +687,17 @@ class Importer {
 
 						$term = wp_insert_term(
 							$taxonomy_node->description,
-							$egdenet_tax_id,
+							Edgenet_Cat::TAXONOMY,
 							[
 								'parent' => ( ! empty( $parent ) ) ? $parent->term_id : 0,
 							]
 						);
 
 						if ( ! is_wp_error( $term ) ) {
-
 							add_term_meta( $term['term_id'], '_edgenet_id', $taxonomy_node->id, true );
 							add_term_meta( $term['term_id'], '_edgenet_id_' . $taxonomy_node->id, $taxonomy_node->id, true );
 							add_term_meta( $term['term_id'], '_edgenet_parent_id', $taxonomy_node->parent_id, true );
 							add_term_meta( $term['term_id'], '_edgenet_taxonomy_id', $taxonomy_node->taxonomy_id, true );
-
 						}
 
 						// Refresh list of Product Categories after insert.
@@ -742,10 +718,34 @@ class Importer {
 
 				if ( ! empty( $leaf_term ) ) {
 					$leaf_term = array_shift( $leaf_term );
-					wp_set_object_terms( $post_id, $leaf_term->term_id, $egdenet_tax_id );
+					wp_set_object_terms( $post_id, $leaf_term->term_id, Edgenet_Cat::TAXONOMY );
 				}
 			}
 		}
+	}
+
+	/**
+	 * Assign Edgenet Brand Term to Post
+	 *
+	 * @param Product $product proctuct being imported.
+	 * @param int     $post_id The Product's \WP_Post id.
+	 *
+	 * @return int of term or 0 if none
+	 * @return array|int|\WP_Error|bool
+	 */
+	private function update_edgenet_brand( $product, $post_id ) {
+		// Get Brand Name
+		$brand = $product->get_attribute_value( edgenet()->settings->_brand );
+
+		if ( ! is_wp_error( $brand ) && ! empty( $brand ) ) {
+
+			// add the term to the post
+			$done = wp_set_object_terms( $post_id, $brand, Brand::TAXONOMY );
+
+			return $done;
+		}
+
+		return false;
 	}
 
 	/**
@@ -777,7 +777,7 @@ class Importer {
 	 * @return int[]
 	 */
 	private function update_documents( $attribute_group_id, $product, $post_id ) {
-		$document_id = 0;
+		$document_ids = [];
 
 		// Get Attributes from Document group.
 		$attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $attribute_group_id );
@@ -850,9 +850,11 @@ class Importer {
 
 				$this->set_post_term( $document_id, $attribute->description, Doc_Type::TAXONOMY );
 			}
+
+			$document_ids[] = $document_id;
 		}
 
-		return $document_id;
+		return $document_ids;
 	}
 
 	/**
@@ -961,13 +963,11 @@ class Importer {
 			$term = wp_insert_term(
 				$value,
 				$taxonomy,
-				array(
-					'slug' => strtolower( str_ireplace( ' ', '-', $value ) )
-				)
+				[ 'slug' => strtolower( str_ireplace( ' ', '-', $value ) ) ]
 			);
 		}
 		// Then we can set the taxonomy
-		wp_set_post_terms( $post_id, $term, $taxonomy );
+		wp_set_post_terms( $post_id, $value, $taxonomy );
 	}
 
 	/**

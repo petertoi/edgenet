@@ -102,6 +102,19 @@ use USSC_Edgenet\Template;
 	);
 
 	/**
+	 * Brand
+	 */
+	echo Template::render_admin_table_row(
+		__( 'Brand', 'ussc' ),
+		Template::render_select(
+			'edgenet_settings[field_map][postmeta][_brand]',
+			'_brand',
+			edgenet()->settings->get_attributes_for_select(),
+			edgenet()->settings->_brand,
+			[]
+		)
+	);
+	/**
 	 * Regular Price
 	 */
 	echo Template::render_admin_table_row(
@@ -296,7 +309,7 @@ use USSC_Edgenet\Template;
 	</tbody>
 </table>
 
-<?php submit_button( __( 'Save Field Map', 'ussc' ), 'primary', 'edgenet_save_field_map' ); ?>
+<?php submit_button( __( 'Save Field Map', 'ussc' ), 'primary', 'edgenet_action[save_field_map]' ); ?>
 
 <?php if ( edgenet()->debug ) : ?>
 	<h2><?php esc_html_e( 'Debug', 'ussc' ); ?></h2>

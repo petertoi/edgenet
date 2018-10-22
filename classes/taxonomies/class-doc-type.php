@@ -36,6 +36,10 @@ class Doc_Type {
 	 */
 	public function __construct() {
 		add_action( 'init', [ $this, 'register_document_type_taxonomy' ] );
+
+		add_filter( 'manage_' . Document::POST_TYPE . '_posts_columns', [ $this, 'filter_posts_columns' ] );
+
+		add_action( 'manage_' . Document::POST_TYPE . '_posts_custom_column',[ $this,  'column_content' ], 10, 2);
 	}
 
 	/**
@@ -52,4 +56,25 @@ class Doc_Type {
 			]
 		);
 	}
+
+	public function filter_posts_columns( $columns ) {
+		$columns['type'] = __( 'Type' );
+		$date = $columns['date'];
+		unset( $columns['date'] );
+		$columns['date'] = $date;
+
+		return $columns;
+	}
+
+
+	function column_content( $column, $post_id ) {
+		// Image column
+		if ( 'type' === $column ) {
+			$terms = wp_get_post_terms( $post_id, self::TAXONOMY );
+			foreach ( $terms as $term ){
+				echo $term->name . '<br />';
+			}
+		}
+	}
+
 }
