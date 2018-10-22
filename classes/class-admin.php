@@ -117,8 +117,8 @@ class Admin {
 
 				break;
 			case 'import_products':
-				wp_schedule_single_event( time(), 'ussc_product_sync_now' );
-
+				wp_schedule_single_event( time(), 'edgenet_forced_product_sync', [ 'force' => true ] );
+				wp_cron();
 				break;
 			case 'import_product_by_id':
 				$product_id = filter_input( INPUT_POST, 'edgenet_import_product_id', FILTER_SANITIZE_STRING );
@@ -229,8 +229,8 @@ class Admin {
 		$import_settings = filter_var( $settings['import'], FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 
 		$import_filter = [
-			'user'           => [ 'filter' => FILTER_VALIDATE_INT ],
-			'is_cron_active' => [ 'filter' => FILTER_SANITIZE_STRING ],
+			'user'            => [ 'filter' => FILTER_VALIDATE_INT ],
+			'is_cron_enabled' => [ 'filter' => FILTER_SANITIZE_STRING ],
 		];
 
 		$import = filter_var_array( $import_settings, $import_filter );

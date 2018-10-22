@@ -33,11 +33,11 @@ use USSC_Edgenet\Template;
 	echo Template::render_admin_table_row(
 		__( 'Enable Automatic Import', 'ussc' ),
 		Template::render_select(
-			'edgenet_settings[import][is_cron_active]',
-			'is_cron_active',
+			'edgenet_settings[import][is_cron_enabled]',
+			'is_cron_enabled',
 			[ [ 'value' => 'on', 'label' => __('On', 'ussc') ], [ 'value' => 'off', 'label' => __('Off', 'ussc')  ] ], // phpcs:ignore
-			isset( edgenet()->settings->import['is_cron_active'] )
-				? edgenet()->settings->import['is_cron_active']
+			isset( edgenet()->settings->import['is_cron_enabled'] )
+				? edgenet()->settings->import['is_cron_enabled']
 				: 'off',
 			[]
 		)
