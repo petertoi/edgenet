@@ -100,7 +100,7 @@ class Admin {
 					edgenet()->settings->is_core_valid()
 					&& ! edgenet()->settings->is_requirement_set_valid()
 				) {
-					// Update requirement set, if it hasn't already been set.
+					// API settings valid? Requirement set empty? Let's update it and save a step. Bonus!
 					edgenet()->importer->import_requirement_set( edgenet()->settings->requirement_set );
 				}
 

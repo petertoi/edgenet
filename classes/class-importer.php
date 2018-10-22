@@ -280,42 +280,17 @@ class Importer {
 
 			$status['product_cats'] = $linked_product_term_ids;
 
-//			$linked_product_term_children_ids = get_term_children( $linked_product_term_ids, 'product_cat' );
-
-//			$not_found = true;
-
-//			foreach ( $linked_product_term_children_ids as $child_id ) {
-//				$child_term = get_term_by( 'id', $child_id, self::TARGET_TAX );
-//				// let look for a match exit if found
-//				if ( $child_term->name === $edgenet_term->name ) {
-//					$not_found = false;
-//					continue;
-//				}
-//			}
-
-			// not found so lets add the tax
-//			if ( $not_found ) {
-//				$child_term = wp_insert_term(
-//					$edgenet_term->name,
-//					self::TARGET_TAX,
-//					array(
-//						'slug'   => strtolower( str_ireplace( ' ', '-', $edgenet_term->slug ) ),
-//						'parent' => $linked_product_term_ids
-//					)
-//				);
-//			}
-
 			// now add the product term to all posts that had the edgenet term
 			$post_args = [
 				'posts_per_page' => - 1,
 				'post_type'      => 'product',
-				'tax_query'      => array(
-					array(
+				'tax_query'      => [
+					[
 						'taxonomy' => Edgenet_Cat::TAXONOMY,
 						'field'    => 'term_id',
 						'terms'    => $edgenet_term->term_id,
-					)
-				),
+					]
+				],
 				'fields'         => 'ids',
 			];
 
@@ -906,9 +881,7 @@ class Importer {
 			$term = wp_insert_term(
 				$value,
 				$taxonomy,
-				array(
-					'slug' => strtolower( str_ireplace( ' ', '-', $value ) )
-				)
+				[ 'slug' => strtolower( str_ireplace( ' ', '-', $value ) ) ]
 			);
 		}
 		// Then we can set the taxonomy

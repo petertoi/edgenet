@@ -92,9 +92,9 @@ class Document {
 			// Prevent Users from Creating/Editing/Deleting Documents
 			'map_meta_cap'        => true,
 			'capability_type'     => 'post',
-			'capabilities'        => array(
+			'capabilities'        => [
 				'create_posts' => 'do_not_allow',
-			),
+			],
 		];
 
 		register_post_type( self::POST_TYPE, $args );
