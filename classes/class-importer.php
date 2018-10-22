@@ -19,6 +19,8 @@ class Importer {
 
 	const META_IMPORT_MUTEX = 'edgenet_import_mutex';
 
+	private $target_filename;
+
 	/**
 	 * Importer constructor.
 	 */
@@ -215,11 +217,16 @@ class Importer {
 			}
 		}
 
+
 		// Sideload Primary Image.
 		$primary_image_id = $product->get_asset_value( edgenet()->settings->_primary_image );
+
+		$title = $product->get_attribute_value( edgenet()->settings->post_title, '' );
+		$this->target_filename = sanitize_file_name( $title );
+
 		if ( $primary_image_id ) {
 			$attachment_id = $this->sideload_attachment(
-				$primary_image_id,
+				$title,
 				$this->generate_edgenet_image_url( $primary_image_id, 'jpg' ),
 				$post_id,
 				'jpg'
@@ -583,7 +590,15 @@ class Importer {
 			'tmp_name' => $temp_file,
 		];
 
-		$id = media_handle_sideload( $file_array, $post_id );
+		$post_data = [
+			'post_title' => $title,
+		];
+
+		add_filter( 'wp_unique_filename', [ $this, 'wp_unique_filename' ], 10, 3 );
+
+		$id = media_handle_sideload( $file_array, $post_id, null, $post_data );
+
+		remove_filter( 'wp_unique_filename', [ $this, 'wp_unique_filename' ], 10, 3  );
 
 		// Check for sideload errors.
 		if ( is_wp_error( $id ) ) {
@@ -612,8 +627,10 @@ class Importer {
 			$asset_id = $product->get_asset_value( $attribute->id );
 
 			if ( ! empty( $asset_id ) ) {
+
+				$this->target_filename = $this->generate_document_filename( $product, $attribute, '-' );
 				$attachment_id = $this->sideload_attachment(
-					$asset_id,
+					$this->generate_document_title( $product, $attribute, ' - ' ),
 					( 'pdf' === $file_ext )
 						? $this->generate_edgenet_document_url( $asset_id )
 						: $this->generate_edgenet_image_url( $asset_id ),
@@ -776,9 +793,11 @@ class Importer {
 				continue;
 			}
 
+			$this->target_filename = $this->generate_document_filename( $product, $attribute, '-' );
+
 			// Get the Attachment ID (new or existing).
 			$attachment_id = $this->sideload_attachment(
-				$asset_id,
+				$this->generate_document_title( $product, $attribute ),
 				$this->generate_edgenet_document_url( $asset_id ),
 				$post_id,
 				'pdf'
@@ -788,6 +807,8 @@ class Importer {
 			if ( is_wp_error( $attachment_id ) ) {
 				continue;
 			}
+
+			//TODO add id to file meta
 
 			$postarr = [
 				'post_author' => edgenet()->settings->import['user'],
@@ -851,17 +872,76 @@ class Importer {
 			$prefix = $product->get_attribute_value( edgenet()->settings->_gtin, 'USSC PRODUCT' );
 		}
 
-		$suffix = $attribute->description;
+		$description = $attribute->description;
+
+		$suffix = explode( ' - ', $description );
+		if ( 1 < count($suffix) ) {
+			array_pop($suffix);
+		}
 
 		$title = sprintf(
 			'%s%s%s',
 			$prefix,
 			$delim,
-			$suffix
+			implode( ' - ', $suffix )
 		);
 
 		return $title;
 	}
+
+
+	/**
+	 * Generate standardized Document filename based on the Product and suffix (Doc_Type name).
+	 *
+	 * @param Product   $product   The Edgenet Product
+	 * @param Attribute $attribute The Edgenet Attribute
+	 * @param string    $delim     Delimeter between Product identifier and document description.
+	 *
+	 * @return string
+	 */
+	private function generate_document_filename( $product, $attribute, $delim = '-' ) {
+
+		$prefix = $product->get_attribute_value( edgenet()->settings->_model_no, '' );
+
+		if ( empty( $prefix ) ) {
+			$prefix = $product->get_attribute_value( edgenet()->settings->_gtin, 'USSC PRODUCT' );
+		}
+
+		$description= $attribute->description;
+
+		$suffix = explode( ' - ', $description );
+		if ( 1 < count($suffix) ) {
+			array_pop($suffix);
+		}
+
+
+		$this->target_filename = sanitize_title( sprintf(
+			'%s%s%s',
+			$prefix,
+			$delim,
+			implode( ' - ', $suffix )
+		) );
+
+		return;
+	}
+
+	public function wp_unique_filename( $filename, $ext, $dir ){
+		$number = '';
+
+		while ( file_exists( $dir . "/$filename" ) ) {
+			$new_number = (int) $number + 1;
+			if ( '' == "$number$ext" ) {
+				$filename = "$filename-" . $new_number;
+			} else {
+				$filename = str_replace( array( "-$number$ext", "$number$ext" ), "-" . $new_number . $ext, $filename );
+			}
+			$number = $new_number;
+		}
+
+		return $this->target_filename . $ext;
+	}
+
+
 
 	/**
 	 * Set specified taxonomy term to the incoming post object. If
