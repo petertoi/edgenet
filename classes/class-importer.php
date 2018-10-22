@@ -760,7 +760,7 @@ class Importer {
 	 * @return int[]
 	 */
 	private function update_documents( $attribute_group_id, $product, $post_id ) {
-		$document_id = 0;
+		$document_ids = [];
 
 		// Get Attributes from Document group.
 		$attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $attribute_group_id );
@@ -829,9 +829,11 @@ class Importer {
 
 				$this->set_post_term( $document_id, $attribute->description, Doc_Type::TAXONOMY );
 			}
+
+			$document_ids[] = $document_id;
 		}
 
-		return $document_id;
+		return $document_ids;
 	}
 
 	/**
