@@ -917,18 +917,18 @@ class Importer {
 		}
 
 
-		$this->target_filename = sanitize_title( sprintf(
+		return sanitize_title( sprintf(
 			'%s%s%s',
 			$prefix,
 			$delim,
 			implode( ' - ', $suffix )
 		) );
 
-		return;
 	}
 
 	public function wp_unique_filename( $filename, $ext, $dir ){
 		$number = '';
+		$filename = $this->target_filename . $ext;
 
 		while ( file_exists( $dir . "/$filename" ) ) {
 			$new_number = (int) $number + 1;
@@ -940,7 +940,7 @@ class Importer {
 			$number = $new_number;
 		}
 
-		return $this->target_filename . $ext;
+		return $filename;
 	}
 
 
