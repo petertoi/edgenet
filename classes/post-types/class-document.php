@@ -70,6 +70,8 @@ class Document {
 		 */
 		$supports = [ 'title' ];
 
+		$menu = \is_plugin_active( 'woocommerce/woocommerce.php' ) ? 'edit.php?post_type=product' : true;
+
 		/**
 		 * Document post type args
 		 */
@@ -80,7 +82,7 @@ class Document {
 			'publicly_queryable'  => false,
 			'exclude_from_search' => true,
 			'show_ui'             => true,
-			'show_in_menu'        => \is_plugin_active( 'woocommerce/woocommerce.php' ) ? 'edit.php?post_type=product' : true,
+//			'show_in_menu'        => is_plugin_active( 'woocommerce/woocommerce.php' ) ? 'edit.php?post_type=product' : true,
 			'query_var'           => true,
 			'has_archive'         => false,
 			'hierarchical'        => false,
