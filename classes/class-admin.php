@@ -88,7 +88,7 @@ class Admin {
 		check_admin_referer( 'ussc-edgenet' );
 
 		// Find out which action was submitted.
-		$actions = filter_input( INPUT_POST, 'edgenet_action', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
+		$actions  = filter_input( INPUT_POST, 'edgenet_action', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 		$action  = key( $actions );
 
 		$settings = filter_input( INPUT_POST, 'edgenet_settings', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
@@ -266,15 +266,17 @@ class Admin {
 
 	}
 
-	/**
-	 * Delete all Document posts and attachments associated with PDFs downloaded from Edgenet.
-	 */
 	private function delete_docs() {
 		$posts = get_posts( [
-			'post_type'   => Document::POST_TYPE,
+			'post_type'   => Post_Types\Document::POST_TYPE,
 			'numberposts' => - 1,
+			'meta_query'  => [
+				[
+					'key'     => '_edgenet_id',
+					'compare' => 'EXISTS' // this should work...
+				]
+			],
 		] );
-
 		foreach ( $posts as $post ) {
 			$attachment_id = get_post_meta( $post->ID, '_edgenet_wp_attachment_id', true );
 			$f             = wp_delete_attachment( $attachment_id, true );
@@ -297,8 +299,13 @@ class Admin {
 		$posts = get_posts( [
 			'post_type'   => 'product',
 			'numberposts' => - 1,
+			'meta_query'  => [
+				[
+					'key'     => '_edgenet_id',
+					'compare' => 'EXISTS' // this should work...
+				]
+			],
 		] );
-
 		foreach ( $posts as $post ) {
 			$thumbnail_id = get_post_meta( $post->ID, '_thumbnail_id', true );
 			$f            = wp_delete_attachment( $thumbnail_id, true );

@@ -889,6 +889,7 @@ class Importer {
 
 			} else {
 				$postarr['meta_input'] = [
+					'_edgenet_id' => $asset_id,
 					'_edgenet_id_' . $asset_id   => $asset_id,
 					Document::META_ATTACHMENT_ID => $attachment_id,
 				];
