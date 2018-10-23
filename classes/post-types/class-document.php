@@ -41,14 +41,15 @@ class Document {
 
 		add_action( 'add_meta_boxes', [ $this, 'add_meta_box' ] );
 
-		add_action( 'save_post_'. self::POST_TYPE, [ $this, 'save_post' ] );
+		add_action( 'save_post_' . self::POST_TYPE, [ $this, 'save_post' ] );
 	}
 
 	/**
 	 * Register the Document post type.
 	 */
 	public function register_document_post_type() {
-		include_once(ABSPATH.'wp-admin/includes/plugin.php');
+		// TODO: Remove this include when Paul sorts out his environment.
+		include_once ABSPATH . 'wp-admin/includes/plugin.php';
 		/**
 		 * Document post type labels.
 		 */
@@ -93,10 +94,9 @@ class Document {
 			'show_in_nav_menus'   => true,
 			'show_in_admin_bar'   => false,
 			// Prevent Users from Creating/Editing/Deleting Documents
-			 'map_meta_cap'        => true,
+			'map_meta_cap'        => true,
 			'capability_type'     => 'post',
-			'capabilities'        => array(
-			//	'create_posts' => 'do_not_allow',
+			'capabilities'        => array(//	'create_posts' => 'do_not_allow',
 			),
 		];
 
@@ -132,10 +132,9 @@ class Document {
 	 * @param \WP_Post $post The current post.
 	 */
 	public function meta_html( $post ) {
-
 		$data = [];
 
-		$data['id'] = get_post_meta( $post->ID, '_attachment_id', true );
+		$data['id']   = get_post_meta( $post->ID, '_attachment_id', true );
 		$data['link'] = ( $data['id'] )
 			? wp_get_attachment_link( $data['id'], 'medium' )
 			: '';
@@ -144,55 +143,53 @@ class Document {
 			? wp_get_attachment_url( $data['id'] )
 			: '';
 
+		if ( ! empty( $attachment_id ) ) {
 
-		if( ! empty( $attachment_id ) ) {
-
-			Template::load( 'admin/edgenet-document-meta-box', $data );
+			Template::load( 'admin/document-meta-box', $data );
 
 		} else {
 
 			wp_enqueue_media();
-			Template::load( 'admin/local-document-meta-box', $data );
+			Template::load( 'admin/document-meta-box', $data );
 		}
 	}
 
-	public function product_meta_html( $post ){
+	public function product_meta_html( $post ) {
 
-		$pages = 		get_posts( [
+		$pages  = get_posts( [
 			'post_type' => 'product',
-
 		] );
 		$output = '';
-		$args = [];
+		$args   = [];
 		if ( ! empty( $pages ) ) {
 
-			$output = "<select name='" . esc_attr(  'meta-product-id') . "' id='" . esc_attr(  'meta-product-id' ) . "' required=\"required\">\n";
+			$output = "<select name='" . esc_attr( 'meta-product-id' ) . "' id='" . esc_attr( 'meta-product-id' ) . "' required=\"required\">\n";
 //			if ( $r['show_option_no_change'] ) {
-				$output .= "\t<option value=\"\">" . esc_html__('Select Linked Product', 'ussc') . "</option>\n";
+			$output .= "\t<option value=\"\">" . esc_html__( 'Select Linked Product', 'ussc' ) . "</option>\n";
 //			}
 //			if ( $r['show_option_none'] ) {
 //				$output .= "\t<option value=\"" . esc_attr( $r['option_none_value'] ) . '">' . $r['show_option_none'] . "</option>\n";
 //			}
-			$args['selected'] = get_post_meta ( $post->ID, Document::META_ATTACHMENT_ID, true);
-			$output .= walk_page_dropdown_tree( $pages, 0, $args );
-			$output .= "</select>\n";
+			$args['selected'] = get_post_meta( $post->ID, Document::META_ATTACHMENT_ID, true );
+			$output           .= walk_page_dropdown_tree( $pages, 0, $args );
+			$output           .= "</select>\n";
 		}
 
 		echo $output;
 	}
 
 	public function save_post( $post_id ) {
-		if( self::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
 
 			return;
 		}
 
 
 		if ( isset( $_POST['meta-file-id'] ) ) {
-			update_post_meta ( $post_id, '_attachment_id', absint( $_POST['meta-file-id'] ) );
+			update_post_meta( $post_id, '_attachment_id', absint( $_POST['meta-file-id'] ) );
 		}
 		if ( isset( $_POST['meta-product-id'] ) ) {
-			update_post_meta ( $post_id, Document::META_ATTACHMENT_ID, absint( $_POST['meta-product-id'] ) );
+			update_post_meta( $post_id, Document::META_ATTACHMENT_ID, absint( $_POST['meta-product-id'] ) );
 		}
 
 	}

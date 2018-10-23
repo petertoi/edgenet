@@ -39,7 +39,7 @@ class Doc_Type {
 
 		add_filter( 'manage_' . Document::POST_TYPE . '_posts_columns', [ $this, 'filter_posts_columns' ] );
 
-		add_action( 'manage_' . Document::POST_TYPE . '_posts_custom_column',[ $this,  'column_content' ], 10, 2);
+		add_action( 'manage_' . Document::POST_TYPE . '_posts_custom_column', [ $this, 'column_content' ], 10, 2 );
 	}
 
 	/**
@@ -52,14 +52,14 @@ class Doc_Type {
 			[
 				'label'        => __( 'Doc Types', 'ussc' ),
 				'rewrite'      => [ 'slug' => self::REWRITE ],
-				'hierarchical' => false,
+				'hierarchical' => true,
 			]
 		);
 	}
 
 	public function filter_posts_columns( $columns ) {
 		$columns['type'] = __( 'Type' );
-		$date = $columns['date'];
+		$date            = $columns['date'];
 		unset( $columns['date'] );
 		$columns['date'] = $date;
 
@@ -68,10 +68,10 @@ class Doc_Type {
 
 
 	function column_content( $column, $post_id ) {
-		// Image column
+		// Image column.
 		if ( 'type' === $column ) {
 			$terms = wp_get_post_terms( $post_id, self::TAXONOMY );
-			foreach ( $terms as $term ){
+			foreach ( $terms as $term ) {
 				echo $term->name . '<br />';
 			}
 		}
