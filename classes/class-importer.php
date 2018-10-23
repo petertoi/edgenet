@@ -16,11 +16,18 @@ use USSC_Edgenet\Taxonomies\Brand;
 use USSC_Edgenet\Taxonomies\Doc_Type;
 use USSC_Edgenet\Taxonomies\Edgenet_Cat;
 
+/**
+ * Class Importer
+ *
+ * Summary
+ *
+ * @package USSC_Edgenet
+ * @author  Peter Toi <peter@petertoi.com>
+ * @version 1.0.0
+ */
 class Importer {
 
 	const META_IMPORT_MUTEX = 'edgenet_import_mutex';
-
-	private $target_filename;
 
 	/**
 	 * Importer constructor.
@@ -142,6 +149,8 @@ class Importer {
 	private function import_product( $product_id, $force_update = false ) {
 		global $post;
 
+		$post_id = 0;
+
 		// Track if we skipped the product update when comparing last_verified times.
 		$update_skipped = false;
 
@@ -218,19 +227,20 @@ class Importer {
 			}
 		}
 
-
 		// Sideload Primary Image.
 		$primary_image_id = $product->get_asset_value( edgenet()->settings->_primary_image );
 
-		$title = $product->get_attribute_value( edgenet()->settings->post_title, '' );
-		$this->target_filename = sanitize_file_name( $title );
-
 		if ( $primary_image_id ) {
-			$attachment_id = $this->sideload_attachment(
-				$title,
+			$primary_image_attribute = edgenet()->settings->requirement_set->get_attribute_by_id( edgenet()->settings->_primary_image );
+			$attachment_id           = $this->sideload_attachment(
 				$this->generate_edgenet_image_url( $primary_image_id, 'jpg' ),
-				$post_id,
-				'jpg'
+				[
+					'attached_post_id' => $post_id,
+					'filename'         => $this->generate_attachment_filename( $product, $primary_image_attribute ),
+					'file_ext'         => 'jpg',
+					'post_title'       => $this->generate_attachment_post_title( $product, $primary_image_attribute ),
+					'edgenet_id'       => $primary_image_id,
+				]
 			);
 
 			if ( ! is_wp_error( $attachment_id ) ) {
@@ -254,6 +264,8 @@ class Importer {
 
 		// Set Brand.
 		$this->update_edgenet_brand( $product, $post_id );
+
+		return $post_id;
 	}
 
 	/**
@@ -265,6 +277,8 @@ class Importer {
 		$sync_status = [];
 
 		/**
+		 * Array of edgenet_cat terms.
+		 *
 		 * @var \WP_Term[] $edgenet_terms
 		 */
 		$edgenet_terms = get_terms( [
@@ -287,16 +301,16 @@ class Importer {
 
 			$status['product_cats'] = $linked_product_term_ids;
 
-			// now add the product term to all posts that had the edgenet term
+			// now add the product term to all posts that had the edgenet term.
 			$post_args = [
 				'posts_per_page' => - 1,
 				'post_type'      => 'product',
-				'tax_query'      => [
+				'tax_query'      => [ // phpcs:ignore
 					[
 						'taxonomy' => Edgenet_Cat::TAXONOMY,
 						'field'    => 'term_id',
 						'terms'    => $edgenet_term->term_id,
-					]
+					],
 				],
 				'fields'         => 'ids',
 			];
@@ -507,33 +521,50 @@ class Importer {
 	 *
 	 * @link   http://wordpress.stackexchange.com/a/145349/26350
 	 *
-	 * @param string $title    Attachment title.
-	 * @param string $url      URL of image to import.
-	 * @param int    $post_id  Post ID to attach image to.
-	 * @param string $file_ext The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
+	 * @param string $url             URL of image to import.
+	 * @param array  $attachment_args Attachment arguments.
 	 *
 	 * @return int|\WP_Error $attachment_id The ID of the Attachment post or \WP_Error if failure.
 	 */
-	private function sideload_attachment( $title, $url, $post_id = 0, $file_ext = '' ) {
+	public function sideload_attachment( $url, $attachment_args = [] ) {
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/media.php';
 
-		// Check if this image already exists.
-		$attachment = get_page_by_title( $title, OBJECT, 'attachment' );
+		$parsed_url = wp_parse_url( $url );
 
-		// Found it? Return the ID.
-		if ( $attachment instanceof \WP_Post ) {
-			return $attachment->ID;
+		$args = wp_parse_args(
+			$attachment_args,
+			[
+				'attached_post_id' => 0,
+				'filename'         => basename( $parsed_url['path'] ),
+				'file_ext'         => false,
+				'post_title'       => basename( $parsed_url['path'] ),
+				'post_author'      => edgenet()->settings->importer['import_user'],
+				'edgenet_id'       => false,
+			]
+		);
+
+		// If we have an Edgenet ID, use it to check if the Attachment exists.
+		if ( ! empty( $args['edgenet_id'] ) ) {
+			$query_args = [
+				'meta_key'     => '_edgenet_id_' . $args['edgenet_id'], /* phpcs:ignore */
+				'meta_compare' => 'EXISTS',
+				'post_type'    => 'product',
+			];
+
+			// Run the WP_Query.
+			$query = new \WP_Query( $query_args );
+			if ( $query->have_posts() ) {
+				// Attachment exists, return the ID.
+				return $query->posts[0]->ID;
+			}
 		}
 
-		if ( empty( $file_ext ) ) {
-			// Get the file extension for the image, without dot.
-			$file_ext = image_type_to_extension(
-				exif_imagetype( $url ),
-				false
-			);
-		}
+		// Set $file_ext via exif, if not provided explicitly via $args.
+		$file_ext = ( empty( $args['file_ext'] ) )
+			? image_type_to_extension( exif_imagetype( $url ), false )
+			: $args['file_ext'];
 
 		// Save as a temporary file.
 		$temp_file = download_url( $url );
@@ -546,7 +577,7 @@ class Importer {
 		// Get file path components.
 		$pathinfo = pathinfo( $temp_file );
 
-		// Rename with correct extension.
+		// Rename with correct extension so media_handle_sideload() doesn't choke.
 		if ( $file_ext !== $pathinfo['extension'] ) {
 			$new_filepath = $pathinfo['dirname'] . DIRECTORY_SEPARATOR . $pathinfo['filename'] . '.' . $file_ext;
 
@@ -563,25 +594,41 @@ class Importer {
 			$temp_file = $new_filepath;
 		}
 
-		// Upload the attachment into the WordPress Media Library.
+		// Upload the attachment into the WordPress Media Library with desired filename.
 		$file_array = [
-			'name'     => $title . '.' . $file_ext,
+			'name'     => $args['filename'] . '.' . $file_ext,
 			'tmp_name' => $temp_file,
 		];
 
 		$post_data = [
-			'post_title' => $title,
+			'post_title'   => $args['post_title'],
+			'post_content' => $args['post_title'],
+			'post_excerpt' => $args['post_title'],
+			'post_author'  => $args['post_author'],
+			'meta_input'   => [
+				'_edgenet_id'                        => $args['edgenet_id'],
+				'_edgenet_id_' . $args['edgenet_id'] => $args['edgenet_id'],
+				'_wp_attachment_image_alt'           => $args['post_title'],
+			],
 		];
 
-		add_filter( 'wp_unique_filename', [ $this, 'wp_unique_filename' ], 10, 3 );
+		// Set meta key to identify if the asset is an Image or Document (used by bulk delete).
+		if ( 'pdf' === $file_ext ) {
+			$post_data['meta_input']['_edgenet_document'] = $file_ext;
+		} else {
+			$post_data['meta_input']['_edgenet_image'] = $file_ext;
+		}
 
-		$id = media_handle_sideload( $file_array, $post_id, null, $post_data );
-
-		remove_filter( 'wp_unique_filename', [ $this, 'wp_unique_filename' ], 10, 3  );
+		$id = media_handle_sideload( $file_array, $args['attached_post_id'], null, $post_data );
 
 		// Check for sideload errors.
 		if ( is_wp_error( $id ) ) {
 			unlink( $file_array['tmp_name'] );
+		}
+
+		if ( ! empty( $args['edgenet_id'] ) ) {
+			add_post_meta( $id, '_edgenet_id', $args['edgenet_id'], true );
+			add_post_meta( $id, '_edgenet_id_' . $args['edgenet_id'], $args['edgenet_id'], true );
 		}
 
 		return $id;
@@ -607,14 +654,17 @@ class Importer {
 
 			if ( ! empty( $asset_id ) ) {
 
-				$this->target_filename = $this->generate_document_filename( $product, $attribute, '-' );
 				$attachment_id = $this->sideload_attachment(
-					$this->generate_document_title( $product, $attribute, ' - ' ),
 					( 'pdf' === $file_ext )
 						? $this->generate_edgenet_document_url( $asset_id )
 						: $this->generate_edgenet_image_url( $asset_id ),
-					$post_id,
-					$file_ext
+					[
+						'attached_post_id' => $post_id,
+						'filename'         => $this->generate_attachment_filename( $product, $attribute ),
+						'file_ext'         => $file_ext,
+						'post_title'       => $this->generate_attachment_post_title( $product, $attribute ),
+						'edgenet_id'       => $asset_id,
+					]
 				);
 
 				if ( ! is_wp_error( $attachment_id ) ) {
@@ -632,6 +682,7 @@ class Importer {
 	 * Generates Edgenet Taxonomy Term heirarchy from Taxonomy_Node[] if it doesn't already exist.
 	 *
 	 * @param string[] $taxonomy_node_ids Array of Taxonomy Node Ids.
+	 * @param Product  $product           The Product.
 	 * @param int      $post_id           The Product's \WP_Post id.
 	 */
 	private function update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id ) {
@@ -649,7 +700,6 @@ class Importer {
 				$taxonomynode_path = array_reverse( $taxonomynode_path );
 				break;
 			}
-
 
 			if ( ! is_wp_error( $taxonomynode_path ) && ! empty( $taxonomynode_path ) ) {
 
@@ -730,11 +780,10 @@ class Importer {
 	 * @param Product $product proctuct being imported.
 	 * @param int     $post_id The Product's \WP_Post id.
 	 *
-	 * @return int of term or 0 if none
 	 * @return array|int|\WP_Error|bool
 	 */
 	private function update_edgenet_brand( $product, $post_id ) {
-		// Get Brand Name
+		// Get Brand Name.
 		$brand = $product->get_attribute_value( edgenet()->settings->_brand );
 
 		if ( ! is_wp_error( $brand ) && ! empty( $brand ) ) {
@@ -793,14 +842,16 @@ class Importer {
 				continue;
 			}
 
-			$this->target_filename = $this->generate_document_filename( $product, $attribute, '-' );
-
 			// Get the Attachment ID (new or existing).
 			$attachment_id = $this->sideload_attachment(
-				$this->generate_document_title( $product, $attribute ),
 				$this->generate_edgenet_document_url( $asset_id ),
-				$post_id,
-				'pdf'
+				[
+					'attached_post_id' => $post_id,
+					'filename'         => $this->generate_attachment_filename( $product, $attribute ),
+					'file_ext'         => 'pdf',
+					'post_title'       => $this->generate_attachment_post_title( $product, $attribute ),
+					'edgenet_id'       => $asset_id,
+				]
 			);
 
 			// Skip to next Asset if attachment ID wasn't returned.
@@ -808,11 +859,9 @@ class Importer {
 				continue;
 			}
 
-			//TODO add id to file meta
-
 			$postarr = [
 				'post_author' => edgenet()->settings->import['user'],
-				'post_title'  => $this->generate_document_title( $product, $attribute ),
+				'post_title'  => $this->generate_attachment_post_title( $product, $attribute ),
 				'post_status' => 'publish',
 				'post_type'   => Document::POST_TYPE,
 			];
@@ -828,6 +877,8 @@ class Importer {
 			// Run the WP_Query.
 			$query = new \WP_Query( $args );
 
+			$doc_type = str_replace( ' - PDF', '', $attribute->description );
+
 			if ( $query->have_posts() ) {
 				// Product exists! Setup post data.
 				$query->the_post();
@@ -838,7 +889,7 @@ class Importer {
 
 				update_post_meta( $document_id, Document::META_ATTACHMENT_ID, $attachment_id );
 
-				$this->set_post_term( $document_id, $attribute->description, Doc_Type::TAXONOMY );
+				$this->set_post_term( $document_id, $doc_type, Doc_Type::TAXONOMY );
 
 			} else {
 				$postarr['meta_input'] = [
@@ -848,7 +899,7 @@ class Importer {
 
 				$document_id = wp_insert_post( $postarr );
 
-				$this->set_post_term( $document_id, $attribute->description, Doc_Type::TAXONOMY );
+				$this->set_post_term( $document_id, $doc_type, Doc_Type::TAXONOMY );
 			}
 
 			$document_ids[] = $document_id;
@@ -858,92 +909,73 @@ class Importer {
 	}
 
 	/**
-	 * Generate standardized Document title based on the Product and suffix (Doc_Type name).
+	 * Generate standardized Attachment title for an Asset (Doc or Img) based on the Product and Attribute Description.
 	 *
-	 * @param Product   $product   The Edgenet Product
-	 * @param Attribute $attribute The Edgenet Attribute
-	 * @param string    $delim     Delimeter between Product identifier and document description.
+	 * @param Product   $product   The Edgenet Product.
+	 * @param Attribute $attribute The Edgenet Attribute.
+	 * @param string    $delim     Delimiter between Product identifier and document description.
 	 *
 	 * @return string
 	 */
-	private function generate_document_title( $product, $attribute, $delim = ' &ndash; ' ) {
+	private function generate_attachment_post_title( $product, $attribute, $delim = ' - ' ) {
 
+		// Prefer Model# for the attachment prefix.
 		$prefix = $product->get_attribute_value( edgenet()->settings->_model_no, '' );
 
+		// Fallback to SKU (should be set to Edgenet UPC) if Model not set.
+		// Final fallback to "PRODUCT" should _never_ occur as Model and SKU are mandatory fields.
 		if ( empty( $prefix ) ) {
-			$prefix = $product->get_attribute_value( edgenet()->settings->_gtin, 'USSC PRODUCT' );
+			$prefix = $product->get_attribute_value( edgenet()->settings->_sku, __( 'PRODUCT', 'ussc' ) );
 		}
 
 		$description = $attribute->description;
 
-		$suffix = explode( ' - ', $description );
-		if ( 1 < count($suffix) ) {
-			array_pop($suffix);
-		}
+		// Strip the ' - PDF' from the end of the description, if it exists. Applicable for Document attributes.
+		$suffix = str_replace( ' - PDF', '', $description );
 
 		$title = sprintf(
 			'%s%s%s',
 			$prefix,
 			$delim,
-			implode( ' - ', $suffix )
+			$suffix
 		);
 
 		return $title;
 	}
 
-
 	/**
-	 * Generate standardized Document filename based on the Product and suffix (Doc_Type name).
+	 * Generate standardized Attachment filename for an Asset (Doc or Img) based on the Product and Attribute Description.
 	 *
-	 * @param Product   $product   The Edgenet Product
-	 * @param Attribute $attribute The Edgenet Attribute
+	 * @param Product   $product   The Edgenet Product.
+	 * @param Attribute $attribute The Edgenet Attribute.
 	 * @param string    $delim     Delimeter between Product identifier and document description.
 	 *
 	 * @return string
 	 */
-	private function generate_document_filename( $product, $attribute, $delim = '-' ) {
+	private function generate_attachment_filename( $product, $attribute, $delim = '-' ) {
 
+		// Prefer Model# for the document prefix.
 		$prefix = $product->get_attribute_value( edgenet()->settings->_model_no, '' );
 
+		// Fallback to SKU (should be set to Edgenet UPC) if Model not set.
+		// Final fallback to "PRODUCT" should _never_ occur as Model and SKU are mandatory fields.
 		if ( empty( $prefix ) ) {
-			$prefix = $product->get_attribute_value( edgenet()->settings->_gtin, 'USSC PRODUCT' );
+			$prefix = $product->get_attribute_value( edgenet()->settings->_sku, __( 'PRODUCT', 'ussc' ) );
 		}
 
-		$description= $attribute->description;
+		$description = $attribute->description;
 
-		$suffix = explode( ' - ', $description );
-		if ( 1 < count($suffix) ) {
-			array_pop($suffix);
-		}
-
+		// Strip the ' - PDF' from the end of the string, if it exists.
+		$suffix = str_replace( ' - PDF', '', $description );
 
 		return sanitize_title( sprintf(
 			'%s%s%s',
 			$prefix,
 			$delim,
-			implode( ' - ', $suffix )
+			$suffix
 		) );
 
 	}
-
-	public function wp_unique_filename( $filename, $ext, $dir ){
-		$number = '';
-		$filename = $this->target_filename . $ext;
-
-		while ( file_exists( $dir . "/$filename" ) ) {
-			$new_number = (int) $number + 1;
-			if ( '' == "$number$ext" ) {
-				$filename = "$filename-" . $new_number;
-			} else {
-				$filename = str_replace( array( "-$number$ext", "$number$ext" ), "-" . $new_number . $ext, $filename );
-			}
-			$number = $new_number;
-		}
-
-		return $filename;
-	}
-
-
 
 	/**
 	 * Set specified taxonomy term to the incoming post object. If
@@ -958,7 +990,7 @@ class Importer {
 	 */
 	private function set_post_term( $post_id, $value, $taxonomy ) {
 		$term = term_exists( $value, $taxonomy );
-		// If the taxonomy doesn't exist, then we create it
+		// If the taxonomy doesn't exist, then we create it.
 		if ( 0 === $term || null === $term ) {
 			$term = wp_insert_term(
 				$value,
@@ -966,7 +998,7 @@ class Importer {
 				[ 'slug' => strtolower( str_ireplace( ' ', '-', $value ) ) ]
 			);
 		}
-		// Then we can set the taxonomy
+		// Then we can set the post - term relationship.
 		wp_set_post_terms( $post_id, $value, $taxonomy );
 	}
 

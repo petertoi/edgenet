@@ -93,6 +93,26 @@ class Requirement_Set {
 	}
 
 	/**
+	 * Get an Attribute by ID.
+	 *
+	 * @param string $attribute_id The Attribute ID.
+	 *
+	 * @return Attribute
+	 */
+	public function get_attribute_by_id( $attribute_id ) {
+		$attribute = array_filter(
+			$this->get_attributes(),
+			function ( $attribute ) use ( $attribute_id ) {
+				return $attribute->id === $attribute_id;
+			}
+		);
+
+		return ( ! empty( $attribute ) )
+			? array_shift( $attribute )
+			: null;
+	}
+
+	/**
 	 * Get all the Attributes contained across all Attibute_Groups within this Requirement_Set.
 	 *
 	 * @return array
