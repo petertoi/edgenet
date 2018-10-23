@@ -526,7 +526,7 @@ class Importer {
 	 *
 	 * @return int|\WP_Error $attachment_id The ID of the Attachment post or \WP_Error if failure.
 	 */
-	public function sideload_attachment( $url, $attachment_args = [] ) {
+	private function sideload_attachment( $url, $attachment_args = [] ) {
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/media.php';
@@ -540,7 +540,7 @@ class Importer {
 				'filename'         => basename( $parsed_url['path'] ),
 				'file_ext'         => false,
 				'post_title'       => basename( $parsed_url['path'] ),
-				'post_author'      => edgenet()->settings->importer['import_user'],
+				'post_author'      => edgenet()->settings->import['user'],
 				'edgenet_id'       => false,
 			]
 		);
