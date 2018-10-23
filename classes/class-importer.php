@@ -550,7 +550,8 @@ class Importer {
 			$query_args = [
 				'meta_key'     => '_edgenet_id_' . $args['edgenet_id'], /* phpcs:ignore */
 				'meta_compare' => 'EXISTS',
-				'post_type'    => 'product',
+				'post_type'    => 'attachment',
+				'post_status'  => 'inherit',
 			];
 
 			// Run the WP_Query.
@@ -624,11 +625,6 @@ class Importer {
 		// Check for sideload errors.
 		if ( is_wp_error( $id ) ) {
 			unlink( $file_array['tmp_name'] );
-		}
-
-		if ( ! empty( $args['edgenet_id'] ) ) {
-			add_post_meta( $id, '_edgenet_id', $args['edgenet_id'], true );
-			add_post_meta( $id, '_edgenet_id_' . $args['edgenet_id'], $args['edgenet_id'], true );
 		}
 
 		return $id;
