@@ -885,19 +885,18 @@ class Importer {
 
 				update_post_meta( $document_id, Document::META_ATTACHMENT_ID, $attachment_id );
 
-				$this->set_post_term( $document_id, $doc_type, Doc_Type::TAXONOMY );
-
 			} else {
 				$postarr['meta_input'] = [
-					'_edgenet_id' => $asset_id,
+					'_edgenet_id'                => $asset_id,
 					'_edgenet_id_' . $asset_id   => $asset_id,
 					Document::META_ATTACHMENT_ID => $attachment_id,
 				];
 
 				$document_id = wp_insert_post( $postarr );
 
-				$this->set_post_term( $document_id, $doc_type, Doc_Type::TAXONOMY );
 			}
+
+			$this->set_post_term( $document_id, $doc_type, Doc_Type::TAXONOMY );
 
 			$document_ids[] = $document_id;
 		}
@@ -996,7 +995,7 @@ class Importer {
 			);
 		}
 		// Then we can set the post - term relationship.
-		wp_set_post_terms( $post_id, $value, $taxonomy );
+		wp_set_post_terms( $post_id, $term['term_id'], $taxonomy );
 	}
 
 	/**

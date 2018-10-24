@@ -1,6 +1,6 @@
 <?php
 /**
- * Filename local-document-meta-box.php
+ * Filename document-meta-box.php
  *
  * @package ussc
  * @author  Peter Toi <peter@petertoi.com>
@@ -12,53 +12,45 @@
  * @var array $data Data passed via Template::load();
  */
 ?>
-<table class="file-link-table">
-    <tr>
-        <td>
-        <td width="100%">
-			<?php
-			if ( ! empty( $data['url'] ) ) {
-				printf( '<a href="%1$s" target="_blank" class="file-link">%2$s</a>', $data['url'], $data['link'] );
-			}
-			printf( '<input type="hidden" name="meta-file-id" id="meta-file-id" class="meta_image_id" value="%1$s" />', $data['id']  );
+<div class="wrapper">
+	<div class="document">
+		<?php
+		if ( ! empty( $data['attachment_url'] ) ) {
+			printf( '<a href="%1$s" target="_blank" class="file-link">%2$s</a>',
+				esc_attr( $data['attachment_url'] ),
+				wp_kses_post( $data['attachment_link'] )
+			);
+		}
 
-			?>
-        </td>
-        <td style="white-space: nowrap"><?php
-			?><input type="button" id="meta-file-button" class="button" value="Choose or Upload an Image" /></td>
-    </tr>
-</table>
-<script>
+		printf( '<input type="hidden" name="ussc_attachment_id" id="ussc_attachment_id" class="ussc_attachment_id" value="%1$s" />',
+			absint( $data['attachment_id'] )
+		);
+		?>
+	</div>
+	<?php if ( empty( $data['edgenet_id'] ) ) : ?>
+	<input type="hidden" name="ussc_action" value="edit_document" />
+	<input type="button" id="ussc_upload_file" class="button" value="<?php esc_attr_e( 'Upload File', 'ussc' ); ?>" />
 
-    jQuery('#meta-file-button').click(function () {
+		<script>
 
-        var send_attachment_bkp = wp.media.editor.send.attachment;
+          jQuery('#ussc_upload_file').click(function() {
 
-        wp.media.editor.send.attachment = function (props, attachment) {
-            jQuery('.file-link').hide();
-            jQuery('#meta-file-id').show().val(attachment.id);
+            var send_attachment = wp.media.editor.send.attachment;
 
-            wp.media.editor.send.attachment = send_attachment_bkp;
-        }
+            wp.media.editor.send.attachment = function(props, attachment) {
+              jQuery('.file-link').hide();
+              jQuery('#ussc_attachment_id').show().val(attachment.id);
 
-        wp.media.editor.open();
+              wp.media.editor.send.attachment = send_attachment;
+            };
 
-        return false;
-    });
-</script>
-<style>
-    #meta-file {
-        border: none;
-        box-shadow: none;
-        width: 100%;
-    }
+            wp.media.editor.open();
 
-    .file-link + #meta-file {
-        display: none;
-    }
+            return false;
+          });
+		</script>
 
-    .file-link {
-        font-size: 14px;
-        padding-left: 5px;
-    }
-</style>
+	<?php else : ?>
+		<p><?php esc_html_e( 'Note: This file is managed by Edgenet.', 'ussc' ); ?></p>
+	<?php endif; ?>
+</div>

@@ -29,9 +29,14 @@ class Document {
 	const REWRITE = 'document';
 
 	/**
-	 * WP Attachment ID.
+	 * Meta key for storing the Attachment (PDF).
 	 */
-	const META_ATTACHMENT_ID = '_edgenet_wp_attachment_id';
+	const META_ATTACHMENT_ID = '_attachment_id';
+
+	/**
+	 * Meta key for storing the related Product ID.
+	 */
+	const META_PRODUCT_ID = '_product_id';
 
 	/**
 	 * Document constructor.
@@ -93,12 +98,6 @@ class Document {
 			'can_export'          => true,
 			'show_in_nav_menus'   => true,
 			'show_in_admin_bar'   => false,
-			// Prevent Users from Creating/Editing/Deleting Documents.
-			'map_meta_cap'        => true,
-			'capability_type'     => 'post',
-			'capabilities'        => [
-				'create_posts' => 'do_not_allow',
-			],
 		];
 
 		register_post_type( self::POST_TYPE, $args );
@@ -116,15 +115,6 @@ class Document {
 			'normal',
 			'default'
 		);
-
-		add_meta_box(
-			'ussc-document-documrts',
-			__( 'Product', 'ussc' ),
-			[ $this, 'product_meta_html' ],
-			self::POST_TYPE,
-			'side',
-			'default'
-		);
 	}
 
 	/**
@@ -135,64 +125,49 @@ class Document {
 	public function meta_html( $post ) {
 		$data = [];
 
-		$data['id']   = get_post_meta( $post->ID, '_attachment_id', true );
-		$data['link'] = ( $data['id'] )
-			? wp_get_attachment_link( $data['id'], 'medium' )
+		$data['attachment_id'] = get_post_meta( $post->ID, self::META_ATTACHMENT_ID, true );
+		$data['edgenet_id']    = get_post_meta( $post->ID, '_edgenet_id', true );
+
+		$data['attachment_link'] = ( $data['attachment_id'] )
+			? wp_get_attachment_link( $data['attachment_id'], 'medium' )
 			: '';
 
-		$data['url'] = ( $data['id'] )
-			? wp_get_attachment_url( $data['id'] )
+		$data['attachment_url'] = ( $data['attachment_id'] )
+			? wp_get_attachment_url( $data['attachment_id'] )
 			: '';
 
-		if ( ! empty( $attachment_id ) ) {
-
-			Template::load( 'admin/document-meta-box', $data );
-
-		} else {
-
+		if ( empty( $data['edgenet_id'] ) ) {
 			wp_enqueue_media();
-			Template::load( 'admin/document-meta-box', $data );
-		}
-	}
-
-	public function product_meta_html( $post ) {
-
-		$pages  = get_posts( [
-			'post_type' => 'product',
-		] );
-		$output = '';
-		$args   = [];
-		if ( ! empty( $pages ) ) {
-
-			$output = "<select name='" . esc_attr( 'meta-product-id' ) . "' id='" . esc_attr( 'meta-product-id' ) . "' required=\"required\">\n";
-//			if ( $r['show_option_no_change'] ) {
-			$output .= "\t<option value=\"\">" . esc_html__( 'Select Linked Product', 'ussc' ) . "</option>\n";
-//			}
-//			if ( $r['show_option_none'] ) {
-//				$output .= "\t<option value=\"" . esc_attr( $r['option_none_value'] ) . '">' . $r['show_option_none'] . "</option>\n";
-//			}
-			$args['selected'] = get_post_meta( $post->ID, Document::META_ATTACHMENT_ID, true );
-			$output           .= walk_page_dropdown_tree( $pages, 0, $args );
-			$output           .= "</select>\n";
 		}
 
-		echo $output;
+		Template::load( 'admin/document-meta-box', $data );
 	}
 
+	/**
+	 * Save Document attachment.
+	 *
+	 * Checks for presence of ussc_action in $_POST before attempting save or delete of attachment.
+	 *
+	 * @param int $post_id The Post ID.
+	 */
 	public function save_post( $post_id ) {
 		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
-
 			return;
 		}
 
+		$ussc_action = filter_input( INPUT_POST, 'ussc_action', FILTER_SANITIZE_STRING );
 
-		if ( isset( $_POST['meta-file-id'] ) ) {
-			update_post_meta( $post_id, '_attachment_id', absint( $_POST['meta-file-id'] ) );
-		}
-		if ( isset( $_POST['meta-product-id'] ) ) {
-			update_post_meta( $post_id, Document::META_ATTACHMENT_ID, absint( $_POST['meta-product-id'] ) );
+		if ( 'edit_document' !== $ussc_action ) {
+			return;
 		}
 
+		$attachment_id = filter_input( INPUT_POST, 'ussc_attachment_id', FILTER_SANITIZE_NUMBER_INT );
+
+		if ( $attachment_id ) {
+			update_post_meta( $post_id, self::META_ATTACHMENT_ID, $attachment_id );
+		} else {
+			delete_post_meta( $post_id, self::META_ATTACHMENT_ID );
+		}
 	}
 
 
