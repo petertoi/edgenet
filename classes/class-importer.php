@@ -184,6 +184,7 @@ class Importer {
 			$import_last_verified_date_time = new \DateTime( $product->last_verified_date_time );
 
 			// Does this product need to be updated? Check verified dates, or force_update.
+			// TODO: $force_update should update the last verified version of the product, not the latest version (that might be unverified).
 			if ( $import_last_verified_date_time > $last_verified_date_time || $force_update ) {
 				// Update, setup postarr args.
 				$postarr       = $this->get_post_postarr( $product );
@@ -251,18 +252,22 @@ class Importer {
 		}
 
 		// Sideload Other Images.
+		// TODO: Should we pass $force_update into these functions?
 		$digital_assets_group_id = edgenet()->settings->_digital_assets;
 		$attachment_ids          = $this->update_digital_assets( $digital_assets_group_id, $product, $post_id );
 
 		// Sideload Documents.
+		// TODO: Should we pass $force_update into these functions?
 		$document_group_id = edgenet()->settings->_documents;
 		$document_ids      = $this->update_documents( $document_group_id, $product, $post_id );
 
 		// Set Product Categories.
+		// TODO: Should we pass $force_update into these functions?
 		$taxonomy_node_ids = $product->taxonomy_node_ids;
 		$this->update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id );
 
 		// Set Brand.
+		// TODO: Should we pass $force_update into these functions?
 		$this->update_edgenet_brand( $product, $post_id );
 
 		return $post_id;
@@ -884,11 +889,13 @@ class Importer {
 				$document_id = wp_update_post( $postarr );
 
 				update_post_meta( $document_id, Document::META_ATTACHMENT_ID, $attachment_id );
+				update_post_meta( $document_id, '_product_id_' . $post_id, $post_id );
 
 			} else {
 				$postarr['meta_input'] = [
 					'_edgenet_id'                => $asset_id,
 					'_edgenet_id_' . $asset_id   => $asset_id,
+					'_product_id_' . $post_id    => $post_id,
 					Document::META_ATTACHMENT_ID => $attachment_id,
 				];
 
