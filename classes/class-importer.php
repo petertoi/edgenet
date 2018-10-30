@@ -109,7 +109,7 @@ class Importer {
 		// Get $product_ids via API if not provided.
 		if ( empty( $product_ids ) ) {
 			$product_ids = $this->get_product_ids( [
-				'DataOwner'                => Edgenet::EDGENET_DATA_OWNER,
+				'DataOwner'                => edgenet()->settings->get_api( 'data_owner' ),
 				'Archived'                 => false,
 				'Desc'                     => false,
 				'Recipients'               => [ 'c964a170-12e7-4e70-bc72-11016d97864f' ],
@@ -160,6 +160,15 @@ class Importer {
 		// Bail early if we're unable to get the Product record.
 		if ( is_wp_error( $product ) ) {
 			return $product;
+		}
+
+		// Bail if product isn't verified.
+		if ( ! $product->is_verified ) {
+			return new \WP_Error(
+				'edgenet-import-product-not-verified',
+				__( 'Product is not verified, skipping.', 'edgenet' ),
+				$product
+			);
 		}
 
 		// Setup WP_Query args to check if this product already exists.
@@ -228,47 +237,49 @@ class Importer {
 			}
 		}
 
-		// Sideload Primary Image.
-		$primary_image_id = $product->get_asset_value( edgenet()->settings->get_field_map( '_primary_image' ) );
+		if ( ! $update_skipped ) {
+			// Sideload Primary Image.
+			$primary_image_id = $product->get_asset_value( edgenet()->settings->get_field_map( '_primary_image' ) );
 
-		if ( $primary_image_id ) {
-			$primary_image_attribute = edgenet()->settings->requirement_set->get_attribute_by_id( edgenet()->settings->get_field_map( '_primary_image' ) );
-			$attachment_id           = $this->sideload_attachment(
-				$this->generate_edgenet_image_url( $primary_image_id, 'jpg' ),
-				[
-					'attached_post_id' => $post_id,
-					'filename'         => $this->generate_attachment_filename( $product, $primary_image_attribute ),
-					'file_ext'         => 'jpg',
-					'post_title'       => $this->generate_attachment_post_title( $product, $primary_image_attribute ),
-					'edgenet_id'       => $primary_image_id,
-				]
-			);
+			if ( $primary_image_id ) {
+				$primary_image_attribute = edgenet()->settings->requirement_set->get_attribute_by_id( edgenet()->settings->get_field_map( '_primary_image' ) );
+				$attachment_id           = $this->sideload_attachment(
+					$this->generate_edgenet_image_url( $primary_image_id, 'jpg' ),
+					[
+						'attached_post_id' => $post_id,
+						'filename'         => $this->generate_attachment_filename( $product, $primary_image_attribute ),
+						'file_ext'         => 'jpg',
+						'post_title'       => $this->generate_attachment_post_title( $product, $primary_image_attribute ),
+						'edgenet_id'       => $primary_image_id,
+					]
+				);
 
-			if ( ! is_wp_error( $attachment_id ) ) {
-				update_post_meta( $post_id, '_thumbnail_id', $attachment_id );
+				if ( ! is_wp_error( $attachment_id ) ) {
+					update_post_meta( $post_id, '_thumbnail_id', $attachment_id );
+				}
+
+				unset( $attachment_id );
 			}
 
-			unset( $attachment_id );
+			// Sideload Other Images.
+			// TODO: Should we pass $force_update into these functions?
+			$digital_assets_group_id = edgenet()->settings->get_field_map( '_digital_assets' );
+			$attachment_ids          = $this->update_digital_assets( $digital_assets_group_id, $product, $post_id );
+
+			// Sideload Documents.
+			// TODO: Should we pass $force_update into these functions?
+			$document_group_id = edgenet()->settings->get_field_map( '_documents' );
+			$document_ids      = $this->update_documents( $document_group_id, $product, $post_id );
+
+			// Set Product Categories.
+			// TODO: Should we pass $force_update into these functions?
+			$taxonomy_node_ids = $product->taxonomy_node_ids;
+			$this->update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id );
+
+			// Set Brand.
+			// TODO: Should we pass $force_update into these functions?
+			$this->update_edgenet_brand( $product, $post_id );
 		}
-
-		// Sideload Other Images.
-		// TODO: Should we pass $force_update into these functions?
-		$digital_assets_group_id = edgenet()->settings->get_field_map( '_digital_assets' );
-		$attachment_ids          = $this->update_digital_assets( $digital_assets_group_id, $product, $post_id );
-
-		// Sideload Documents.
-		// TODO: Should we pass $force_update into these functions?
-		$document_group_id = edgenet()->settings->get_field_map( '_documents' );
-		$document_ids      = $this->update_documents( $document_group_id, $product, $post_id );
-
-		// Set Product Categories.
-		// TODO: Should we pass $force_update into these functions?
-		$taxonomy_node_ids = $product->taxonomy_node_ids;
-		$this->update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id );
-
-		// Set Brand.
-		// TODO: Should we pass $force_update into these functions?
-		$this->update_edgenet_brand( $product, $post_id );
 
 		return $post_id;
 	}
@@ -694,7 +705,7 @@ class Importer {
 				$taxonomynode_path = edgenet()->api_adapter->taxonomynode_pathtoroot( $taxonomy_node_id );
 
 				// Bypass 'other' taxonomies. We're only interested in one.
-				if ( is_wp_error( $taxonomynode_path ) || ! empty( $taxonomynode_path ) && Edgenet::EDGENET_TAXONOMY_ID !== $taxonomynode_path[0]->taxonomy_id ) {
+				if ( is_wp_error( $taxonomynode_path ) || ! empty( $taxonomynode_path ) && edgenet()->settings->get_api( 'taxonomy_id' ) !== $taxonomynode_path[0]->taxonomy_id ) {
 					continue;
 				}
 

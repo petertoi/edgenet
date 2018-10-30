@@ -3,12 +3,11 @@
  * Filename class-documents.php
  *
  * @package edgenet
+ * @since   1.0.0
  * @author  Peter Toi <peter@petertoi.com>
- *
  */
 
 namespace Edgenet\Post_Types;
-
 
 use Edgenet\Template;
 
