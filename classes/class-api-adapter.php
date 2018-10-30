@@ -2,24 +2,24 @@
 /**
  * Filename class-api-adapter.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
-use USSC_Edgenet\Item\Product;
-use USSC_Edgenet\Item\Requirement_Set;
-use USSC_Edgenet\Item\Attribute;
-use USSC_Edgenet\Item\Taxonomy_Node;
+use Edgenet\Item\Product;
+use Edgenet\Item\Requirement_Set;
+use Edgenet\Item\Attribute;
+use Edgenet\Item\Taxonomy_Node;
 
 /**
  * Class API_Adapter
  *
- * Adapter for \USSC_Edgenet\API that handles Authorization/Re-authorization
+ * Adapter for \Edgenet\API that handles Authorization/Re-authorization
  * along with wrapping a number of API calls with easy to use functions.
  *
- * @package USSC_Edgenet
+ * @package Edgenet
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -199,8 +199,8 @@ class API_Adapter {
 
 		if ( is_wp_error( $raw_response ) ) {
 			$response = new \WP_Error(
-				'ussc-edgenet-auth-error',
-				__( 'Auth error.', 'ussc' ),
+				'edgenet-auth-error',
+				__( 'Auth error.', 'edgenet' ),
 				$raw_response
 			);
 		} else {
@@ -208,8 +208,8 @@ class API_Adapter {
 			$data = json_decode( $body );
 			if ( empty( $data->Value ) ) {  // phpcs:ignore
 				$response = new \WP_Error(
-					'ussc-edgenet-auth-value-is-empty',
-					__( 'Auth value is empty.', 'ussc' ),
+					'edgenet-auth-value-is-empty',
+					__( 'Auth value is empty.', 'edgenet' ),
 					$raw_response
 				);
 			} else {
@@ -336,8 +336,8 @@ class API_Adapter {
 				$product = new Product( $product_array );
 			} else {
 				$product = new \WP_Error(
-					'ussc-edgenet-product-error',
-					__( 'Product Type missing from endpoint response.', 'ussc' ),
+					'edgenet-product-error',
+					__( 'Product Type missing from endpoint response.', 'edgenet' ),
 					$product_array
 				);
 			}
@@ -374,8 +374,8 @@ class API_Adapter {
 					$taxonomy_node = new Taxonomy_Node( $taxonomy_node_array );
 				} else {
 					$taxonomy_node = new \WP_Error(
-						'ussc-edgenet-taxonomynode-error',
-						__( 'TaxonomyNode Type missing from endpoint response.', 'ussc' ),
+						'edgenet-taxonomynode-error',
+						__( 'TaxonomyNode Type missing from endpoint response.', 'edgenet' ),
 						$taxonomy_node_array
 					);
 				}
@@ -414,8 +414,8 @@ class API_Adapter {
 						$taxonomy_node = new Taxonomy_Node( $taxonomy_node_array );
 					} else {
 						$taxonomy_node = new \WP_Error(
-							'ussc-edgenet-taxonomynode-error',
-							__( 'TaxonomyNode Type missing from endpoint response.', 'ussc' ),
+							'edgenet-taxonomynode-error',
+							__( 'TaxonomyNode Type missing from endpoint response.', 'edgenet' ),
 							$taxonomy_node_array
 						);
 					}

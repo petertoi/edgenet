@@ -2,18 +2,18 @@
 /**
  * Filename settings-map.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
 ?>
 <?php
 
-use USSC_Edgenet\Template;
+use Edgenet\Template;
 
 ?>
 
-<h2><?php esc_html_e( 'Product Field Map', 'ussc' ); ?></h2>
+<h2><?php esc_html_e( 'Product Field Map', 'edgenet' ); ?></h2>
 <table class="form-table">
 	<tbody>
 	<?php
@@ -21,12 +21,12 @@ use USSC_Edgenet\Template;
 	 * Product Name
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Product Title', 'ussc' ),
+		__( 'Product Title', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][post][post_title]',
 			'post_title',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->post_title,
+			edgenet()->settings->get_field_map( 'post_title' ),
 			[]
 		)
 	);
@@ -35,12 +35,12 @@ use USSC_Edgenet\Template;
 	 * Short Description
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Short Description', 'ussc' ),
+		__( 'Short Description', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][post][post_excerpt]',
 			'post_excerpt',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->post_excerpt,
+			edgenet()->settings->get_field_map( 'post_excerpt' ),
 			[]
 		)
 	);
@@ -49,12 +49,12 @@ use USSC_Edgenet\Template;
 	 * Long Description
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Long Description', 'ussc' ),
+		__( 'Long Description', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][post][post_content]',
 			'post_content',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->post_content,
+			edgenet()->settings->get_field_map( 'post_content' ),
 			[]
 		)
 	);
@@ -63,12 +63,12 @@ use USSC_Edgenet\Template;
 	 * GTIN
 	 */
 	echo Template::render_admin_table_row(
-		__( 'GTIN', 'ussc' ),
+		__( 'GTIN', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_gtin]',
 			'_gtin',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_gtin,
+			edgenet()->settings->get_field_map( '_gtin' ),
 			[]
 		)
 	);
@@ -77,12 +77,12 @@ use USSC_Edgenet\Template;
 	 * SKU
 	 */
 	echo Template::render_admin_table_row(
-		__( 'SKU', 'ussc' ),
+		__( 'SKU', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_sku]',
 			'_sku',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_sku,
+			edgenet()->settings->get_field_map( '_sku' ),
 			[]
 		)
 	);
@@ -91,12 +91,12 @@ use USSC_Edgenet\Template;
 	 * Model No
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Model No', 'ussc' ),
+		__( 'Model No', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_model_no]',
 			'_model_no',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_model_no,
+			edgenet()->settings->get_field_map( '_model_no' ),
 			[]
 		)
 	);
@@ -105,12 +105,12 @@ use USSC_Edgenet\Template;
 	 * Brand
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Brand', 'ussc' ),
+		__( 'Brand', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_brand]',
 			'_brand',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_brand,
+			edgenet()->settings->get_field_map( '_brand' ),
 			[]
 		)
 	);
@@ -118,12 +118,12 @@ use USSC_Edgenet\Template;
 	 * Regular Price
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Regular Price', 'ussc' ),
+		__( 'Regular Price', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_regular_price]',
 			'_regular_price',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_regular_price,
+			edgenet()->settings->get_field_map( '_regular_price' ),
 			[]
 		)
 	);
@@ -133,12 +133,12 @@ use USSC_Edgenet\Template;
 	 * Weight
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Weight', 'ussc' ),
+		__( 'Shipping Weight', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_weight]',
 			'_weight',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_weight,
+			edgenet()->settings->get_field_map( '_weight' ),
 			[]
 		)
 	);
@@ -147,12 +147,12 @@ use USSC_Edgenet\Template;
 	 * Length
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Length', 'ussc' ),
+		__( 'Shipping Length', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_length]',
 			'_length',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_length,
+			edgenet()->settings->get_field_map( '_length' ),
 			[]
 		)
 	);
@@ -161,12 +161,12 @@ use USSC_Edgenet\Template;
 	 * Width
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Width', 'ussc' ),
+		__( 'Shipping Width', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_width]',
 			'_width',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_width,
+			edgenet()->settings->get_field_map( '_width' ),
 			[]
 		)
 	);
@@ -175,12 +175,12 @@ use USSC_Edgenet\Template;
 	 * Height
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Height', 'ussc' ),
+		__( 'Shipping Height', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_height]',
 			'_height',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_height,
+			edgenet()->settings->get_field_map( '_height' ),
 			[]
 		)
 	);
@@ -188,7 +188,7 @@ use USSC_Edgenet\Template;
 	</tbody>
 </table>
 
-<h2><?php esc_html_e( 'Attribute Groups', 'ussc' ); ?></h2>
+<h2><?php esc_html_e( 'Attribute Groups', 'edgenet' ); ?></h2>
 <table class="form-table">
 
 	<tbody>
@@ -197,12 +197,12 @@ use USSC_Edgenet\Template;
 	 * Features
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Features', 'ussc' ),
+		__( 'Features', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_features]',
 			'_features',
 			edgenet()->settings->get_attribute_groups_for_select(),
-			edgenet()->settings->_features,
+			edgenet()->settings->get_field_map( '_features' ),
 			[]
 		)
 	);
@@ -211,12 +211,12 @@ use USSC_Edgenet\Template;
 	 * Dimensions
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Dimensions', 'ussc' ),
+		__( 'Dimensions', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_dimensions]',
 			'_dimensions',
 			edgenet()->settings->get_attribute_groups_for_select(),
-			edgenet()->settings->_dimensions,
+			edgenet()->settings->get_field_map( '_dimensions' ),
 			[]
 		)
 	);
@@ -225,12 +225,12 @@ use USSC_Edgenet\Template;
 	 * Other
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Other', 'ussc' ),
+		__( 'Other', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_other]',
 			'_other',
 			edgenet()->settings->get_attribute_groups_for_select(),
-			edgenet()->settings->_other,
+			edgenet()->settings->get_field_map( '_other' ),
 			[]
 		)
 	);
@@ -239,12 +239,12 @@ use USSC_Edgenet\Template;
 	 * Regulatory
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Regulatory', 'ussc' ),
+		__( 'Regulatory', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_regulatory]',
 			'_regulatory',
 			edgenet()->settings->get_attribute_groups_for_select(),
-			edgenet()->settings->_regulatory,
+			edgenet()->settings->get_field_map( '_regulatory' ),
 			[]
 		)
 	);
@@ -252,7 +252,7 @@ use USSC_Edgenet\Template;
 	</tbody>
 </table>
 
-<h2><?php esc_html_e( 'Digital Assets', 'ussc' ); ?></h2>
+<h2><?php esc_html_e( 'Digital Assets', 'edgenet' ); ?></h2>
 <table class="form-table">
 	<tbody>
 	<?php
@@ -260,12 +260,12 @@ use USSC_Edgenet\Template;
 	 * Primary Image
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Primary Image', 'ussc' ),
+		__( 'Primary Image', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_primary_image]',
 			'_primary_image',
 			edgenet()->settings->get_attributes_for_select(),
-			edgenet()->settings->_primary_image,
+			edgenet()->settings->get_field_map( '_primary_image' ),
 			[]
 		)
 	);
@@ -274,12 +274,12 @@ use USSC_Edgenet\Template;
 	 * Digital Assets
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Digital Assets', 'ussc' ),
+		__( 'Digital Assets', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_digital_assets]',
 			'_digital_assets',
 			edgenet()->settings->get_attribute_groups_for_select(),
-			edgenet()->settings->_digital_assets,
+			edgenet()->settings->get_field_map( '_digital_assets' ),
 			[]
 		)
 	);
@@ -287,7 +287,7 @@ use USSC_Edgenet\Template;
 	</tbody>
 </table>
 
-<h2><?php esc_html_e( 'Documents', 'ussc' ); ?></h2>
+<h2><?php esc_html_e( 'Documents', 'edgenet' ); ?></h2>
 <table class="form-table">
 
 	<tbody>
@@ -296,12 +296,12 @@ use USSC_Edgenet\Template;
 	 * Documents
 	 */
 	echo Template::render_admin_table_row(
-		__( 'Documents Group', 'ussc' ),
+		__( 'Documents Group', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[field_map][postmeta][_documents]',
 			'_documents',
 			edgenet()->settings->get_attribute_groups_for_select(),
-			edgenet()->settings->_documents,
+			edgenet()->settings->get_field_map( '_documents' ),
 			[]
 		)
 	);
@@ -309,9 +309,9 @@ use USSC_Edgenet\Template;
 	</tbody>
 </table>
 
-<?php submit_button( __( 'Save Field Map', 'ussc' ), 'primary', 'edgenet_action[save_field_map]' ); ?>
+<?php submit_button( __( 'Save Field Map', 'edgenet' ), 'primary', 'edgenet_action[save_field_map]' ); ?>
 
 <?php if ( edgenet()->debug ) : ?>
-	<h2><?php esc_html_e( 'Debug', 'ussc' ); ?></h2>
+	<h2><?php esc_html_e( 'Debug', 'edgenet' ); ?></h2>
 	<pre><?php print_r( edgenet()->settings->field_map ); // phpcs:ignore ?></pre>
 <?php endif; ?>

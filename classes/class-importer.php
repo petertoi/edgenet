@@ -2,26 +2,26 @@
 /**
  * Filename class-importer.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
-use USSC_Edgenet\Item\Attribute;
-use USSC_Edgenet\Item\Attribute_Group;
-use USSC_Edgenet\Item\Product;
-use USSC_Edgenet\Post_Types\Document;
-use USSC_Edgenet\Taxonomies\Brand;
-use USSC_Edgenet\Taxonomies\Doc_Type;
-use USSC_Edgenet\Taxonomies\Edgenet_Cat;
+use Edgenet\Item\Attribute;
+use Edgenet\Item\Attribute_Group;
+use Edgenet\Item\Product;
+use Edgenet\Post_Types\Document;
+use Edgenet\Taxonomies\Brand;
+use Edgenet\Taxonomies\Doc_Type;
+use Edgenet\Taxonomies\Edgenet_Cat;
 
 /**
  * Class Importer
  *
  * Summary
  *
- * @package USSC_Edgenet
+ * @package Edgenet
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -88,7 +88,7 @@ class Importer {
 		if ( ! is_array( $product_ids ) ) {
 			_doing_it_wrong(
 				__FUNCTION__,
-				wp_kses_post( __( 'Please provide an array of Product IDs', 'ussc' ) ),
+				wp_kses_post( __( 'Please provide an array of Product IDs', 'edgenet' ) ),
 				'1.0.0'
 			);
 		}
@@ -98,8 +98,8 @@ class Importer {
 
 		if ( $import_active ) {
 			return new \WP_Error(
-				'ussc-edgenet-import-error',
-				__( 'Another import is still underway. Please try again later.', 'ussc' )
+				'edgenet-import-error',
+				__( 'Another import is still underway. Please try again later.', 'edgenet' )
 			);
 		}
 
@@ -109,7 +109,7 @@ class Importer {
 		// Get $product_ids via API if not provided.
 		if ( empty( $product_ids ) ) {
 			$product_ids = $this->get_product_ids( [
-				'DataOwner'                => Edgenet::DATA_OWNER,
+				'DataOwner'                => Edgenet::EDGENET_DATA_OWNER,
 				'Archived'                 => false,
 				'Desc'                     => false,
 				'Recipients'               => [ 'c964a170-12e7-4e70-bc72-11016d97864f' ],
@@ -229,10 +229,10 @@ class Importer {
 		}
 
 		// Sideload Primary Image.
-		$primary_image_id = $product->get_asset_value( edgenet()->settings->_primary_image );
+		$primary_image_id = $product->get_asset_value( edgenet()->settings->get_field_map( '_primary_image' ) );
 
 		if ( $primary_image_id ) {
-			$primary_image_attribute = edgenet()->settings->requirement_set->get_attribute_by_id( edgenet()->settings->_primary_image );
+			$primary_image_attribute = edgenet()->settings->requirement_set->get_attribute_by_id( edgenet()->settings->get_field_map( '_primary_image' ) );
 			$attachment_id           = $this->sideload_attachment(
 				$this->generate_edgenet_image_url( $primary_image_id, 'jpg' ),
 				[
@@ -253,12 +253,12 @@ class Importer {
 
 		// Sideload Other Images.
 		// TODO: Should we pass $force_update into these functions?
-		$digital_assets_group_id = edgenet()->settings->_digital_assets;
+		$digital_assets_group_id = edgenet()->settings->get_field_map( '_digital_assets' );
 		$attachment_ids          = $this->update_digital_assets( $digital_assets_group_id, $product, $post_id );
 
 		// Sideload Documents.
 		// TODO: Should we pass $force_update into these functions?
-		$document_group_id = edgenet()->settings->_documents;
+		$document_group_id = edgenet()->settings->get_field_map( '_documents' );
 		$document_ids      = $this->update_documents( $document_group_id, $product, $post_id );
 
 		// Set Product Categories.
@@ -356,19 +356,19 @@ class Importer {
 			'_archived_metadata'          => $product->archived_metadata,
 			'_record_date'                => $product->record_date,
 			'_audit_info'                 => $product->audit_info,
-			'_gtin'                       => $product->get_attribute_value( edgenet()->settings->_gtin, '' ),
-			'_sku'                        => $product->get_attribute_value( edgenet()->settings->_sku, '' ),
-			'_model_no'                   => $product->get_attribute_value( edgenet()->settings->_model_no, '' ),
-			'_regular_price'              => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ) ),
-			'_price'                      => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_regular_price, '' ) ) ),
-			'_weight'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_weight, '' ) ) ),
-			'_length'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_length, '' ) ) ),
-			'_width'                      => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_width, '' ) ) ),
-			'_height'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->_height, '' ) ) ),
+			'_gtin'                       => $product->get_attribute_value( edgenet()->settings->get_field_map( '_gtin' ), '' ),
+			'_sku'                        => $product->get_attribute_value( edgenet()->settings->get_field_map( '_sku' ), '' ),
+			'_model_no'                   => $product->get_attribute_value( edgenet()->settings->get_field_map( '_model_no' ), '' ),
+			'_regular_price'              => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->get_field_map( '_regular_price' ), '' ) ) ),
+			'_price'                      => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->get_field_map( '_regular_price' ), '' ) ) ),
+			'_weight'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->get_field_map( '_weight' ), '' ) ) ),
+			'_length'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->get_field_map( '_length' ), '' ) ) ),
+			'_width'                      => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->get_field_map( '_width' ), '' ) ) ),
+			'_height'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->get_field_map( '_height' ), '' ) ) ),
 		];
 
 		// Grab all the Features attributes from this Product.
-		$features_group_id = edgenet()->settings->_features;
+		$features_group_id = edgenet()->settings->get_field_map( '_features' );
 		if ( ! empty( $features_group_id ) ) {
 			$features_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $features_group_id );
 
@@ -378,7 +378,7 @@ class Importer {
 		}
 
 		// Grab all the Dimensions attributes from this Product.
-		$dimensions_group_id = edgenet()->settings->_dimensions;
+		$dimensions_group_id = edgenet()->settings->get_field_map( '_dimensions' );
 		if ( ! empty( $dimensions_group_id ) ) {
 			$dimensions_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $dimensions_group_id );
 
@@ -388,7 +388,7 @@ class Importer {
 		}
 
 		// Grab all the Other attributes from this Product.
-		$other_group_id = edgenet()->settings->_other;
+		$other_group_id = edgenet()->settings->get_field_map( '_other' );
 		if ( ! empty( $other_group_id ) ) {
 			$other_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $other_group_id );
 
@@ -398,7 +398,7 @@ class Importer {
 		}
 
 		// Grab all the Regulatory attributes from this Product.
-		$regulatory_group_id = edgenet()->settings->_regulatory;
+		$regulatory_group_id = edgenet()->settings->get_field_map( '_regulatory' );
 		if ( ! empty( $regulatory_group_id ) ) {
 			$regulatory_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $regulatory_group_id );
 
@@ -420,10 +420,10 @@ class Importer {
 	private function get_post_postarr( $product ) {
 		// Setup postarr to prep for insert or update.
 		$postarr = [
-			'post_author'  => edgenet()->settings->import['user'],
-			'post_title'   => $product->get_attribute_value( edgenet()->settings->post_title, '' ),
-			'post_content' => $product->get_attribute_value( edgenet()->settings->post_content, '' ),
-			'post_excerpt' => $product->get_attribute_value( edgenet()->settings->post_excerpt, '' ),
+			'post_author'  => edgenet()->settings->get_import( 'user' ),
+			'post_title'   => $product->get_attribute_value( edgenet()->settings->get_field_map( 'post_title' ), '' ),
+			'post_content' => $product->get_attribute_value( edgenet()->settings->get_field_map( 'post_content' ), '' ),
+			'post_excerpt' => $product->get_attribute_value( edgenet()->settings->get_field_map( 'post_excerpt' ), '' ),
 			'post_status'  => 'publish',
 			'post_type'    => 'product',
 		];
@@ -545,7 +545,7 @@ class Importer {
 				'filename'         => basename( $parsed_url['path'] ),
 				'file_ext'         => false,
 				'post_title'       => basename( $parsed_url['path'] ),
-				'post_author'      => edgenet()->settings->import['user'],
+				'post_author'      => edgenet()->settings->get_import( 'user' ),
 				'edgenet_id'       => false,
 			]
 		);
@@ -591,7 +591,7 @@ class Importer {
 
 			if ( ! $success ) {
 				return new \WP_Error(
-					'ussc-edgenet-file-error',
+					'edgenet-file-error',
 					'Unable to rename temp file.',
 					[ $pathinfo, $new_filepath ]
 				);
@@ -694,7 +694,7 @@ class Importer {
 				$taxonomynode_path = edgenet()->api_adapter->taxonomynode_pathtoroot( $taxonomy_node_id );
 
 				// Bypass 'other' taxonomies. We're only interested in one.
-				if ( is_wp_error( $taxonomynode_path ) || ! empty( $taxonomynode_path ) && Edgenet::TAXONOMY_ID !== $taxonomynode_path[0]->taxonomy_id ) {
+				if ( is_wp_error( $taxonomynode_path ) || ! empty( $taxonomynode_path ) && Edgenet::EDGENET_TAXONOMY_ID !== $taxonomynode_path[0]->taxonomy_id ) {
 					continue;
 				}
 
@@ -785,7 +785,7 @@ class Importer {
 	 */
 	private function update_edgenet_brand( $product, $post_id ) {
 		// Get Brand Name.
-		$brand = $product->get_attribute_value( edgenet()->settings->_brand );
+		$brand = $product->get_attribute_value( edgenet()->settings->get_field_map( '_brand' ) );
 
 		if ( ! is_wp_error( $brand ) && ! empty( $brand ) ) {
 
@@ -861,7 +861,7 @@ class Importer {
 			}
 
 			$postarr = [
-				'post_author' => edgenet()->settings->import['user'],
+				'post_author' => edgenet()->settings->get_import( 'user' ),
 				'post_title'  => $this->generate_attachment_post_title( $product, $attribute ),
 				'post_status' => 'publish',
 				'post_type'   => Document::POST_TYPE,
@@ -923,12 +923,12 @@ class Importer {
 	private function generate_attachment_post_title( $product, $attribute, $delim = ' - ' ) {
 
 		// Prefer Model# for the attachment prefix.
-		$prefix = $product->get_attribute_value( edgenet()->settings->_model_no, '' );
+		$prefix = $product->get_attribute_value( edgenet()->settings->get_field_map( '_model_no' ), '' );
 
 		// Fallback to SKU (should be set to Edgenet UPC) if Model not set.
 		// Final fallback to "PRODUCT" should _never_ occur as Model and SKU are mandatory fields.
 		if ( empty( $prefix ) ) {
-			$prefix = $product->get_attribute_value( edgenet()->settings->_sku, __( 'PRODUCT', 'ussc' ) );
+			$prefix = $product->get_attribute_value( edgenet()->settings->get_field_map( '_sku' ), __( 'PRODUCT', 'edgenet' ) );
 		}
 
 		$description = $attribute->description;
@@ -958,12 +958,12 @@ class Importer {
 	private function generate_attachment_filename( $product, $attribute, $delim = '-' ) {
 
 		// Prefer Model# for the document prefix.
-		$prefix = $product->get_attribute_value( edgenet()->settings->_model_no, '' );
+		$prefix = $product->get_attribute_value( edgenet()->settings->get_field_map( '_model_no' ), '' );
 
 		// Fallback to SKU (should be set to Edgenet UPC) if Model not set.
 		// Final fallback to "PRODUCT" should _never_ occur as Model and SKU are mandatory fields.
 		if ( empty( $prefix ) ) {
-			$prefix = $product->get_attribute_value( edgenet()->settings->_sku, __( 'PRODUCT', 'ussc' ) );
+			$prefix = $product->get_attribute_value( edgenet()->settings->get_field_map( '_sku' ), __( 'PRODUCT', 'edgenet' ) );
 		}
 
 		$description = $attribute->description;

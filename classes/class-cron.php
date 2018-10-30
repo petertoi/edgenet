@@ -2,18 +2,18 @@
 /**
  * Filename class-cron.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
 /**
  * Class CRON
  *
  * Summary
  *
- * @package USSC_Edgenet
+ * @package Edgenet
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -67,8 +67,8 @@ class CRON {
 
 		if ( ! $force && ! $this->is_cron_enabled() ) {
 			$status['import'] = new \WP_Error(
-				'ussc-edgenet-import-error',
-				__( 'Automatic import is disabled.', 'ussc' )
+				'edgenet-import-error',
+				__( 'Automatic import is disabled.', 'edgenet' )
 			);
 
 			return $status;

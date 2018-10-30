@@ -2,11 +2,11 @@
 /**
  * Filename class-template.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
 
 class Template {
@@ -120,7 +120,7 @@ class Template {
 			default:
 				_doing_it_wrong(
 					__FUNCTION__,
-					esc_html__( 'That field type is not supported.', 'ussc' ),
+					esc_html__( 'That field type is not supported.', 'edgenet' ),
 					'2.0.0'
 				);
 				break;

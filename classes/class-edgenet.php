@@ -1,15 +1,16 @@
 <?php
 /**
- * @package USSC_Edgenet
+ * @package Edgenet
+ * @since   1.0.0
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
-use USSC_Edgenet\Post_Types\Document;
-use USSC_Edgenet\Taxonomies\Brand;
-use USSC_Edgenet\Taxonomies\Doc_Type;
-use USSC_Edgenet\Taxonomies\Edgenet_Cat;
+use Edgenet\Post_Types\Document;
+use Edgenet\Taxonomies\Brand;
+use Edgenet\Taxonomies\Doc_Type;
+use Edgenet\Taxonomies\Edgenet_Cat;
 
 /**
  * Class WP_Vote
@@ -19,17 +20,7 @@ use USSC_Edgenet\Taxonomies\Edgenet_Cat;
 class Edgenet {
 	use Singleton;
 
-	const VERSION = '1.0.0-alpha';
-
-	const PROD_USERNAME = 'UNITEDSTATESSTOVECOMPANY_API';
-
-	const PROD_SECRET = 'y2T3adTgEHGMdspMRz0R0ZCkkdfcPK/ciZFXkdMIp6wCymefIU5104J+YhdqvIynKVQoS15uTEqCyFhAZ/4w8A==';
-
-	const DATA_OWNER = '6a4bdd27-199b-4751-b10e-fa8273e84745';
-
-	const REQUIREMENT_SET = 'c726fa92-7119-2e37-30fe-304a1a3e579d';
-
-	const TAXONOMY_ID = 'cf5b4e7e-30ab-4c04-ba3e-bad6f9e853e2';
+	const VERSION = '1.0.0';
 
 	const ACTIVE_CRON_KEY = 'edgenet_cron_active';
 
@@ -83,14 +74,14 @@ class Edgenet {
 	public $importer;
 
 	/**
-	 * USSC_Edgenet constructor.
+	 * Edgenet constructor.
 	 */
 	private function __construct() {
 		$this->plugin_path = plugin_dir_path( __DIR__ );
 		$this->plugin_url  = plugin_dir_url( __DIR__ );
 
 		// Init Debug early.
-		if ( defined( 'USSC_EDGENET_DEBUG' ) && USSC_EDGENET_DEBUG ) {
+		if ( defined( 'EDGENET_DEBUG' ) && EDGENET_DEBUG ) {
 			$this->debug = true;
 		}
 
@@ -105,9 +96,9 @@ class Edgenet {
 
 		// Init API.
 		$this->api_adapter = new API_Adapter(
-			self::PROD_USERNAME,
-			self::PROD_SECRET,
-			self::DATA_OWNER,
+			$this->settings->get_api( 'username' ),
+			$this->settings->get_api( 'secret' ),
+			$this->settings->get_api( 'data_owner' ),
 			new API()
 		);
 

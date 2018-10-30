@@ -2,11 +2,11 @@
 /**
  * Filename class-requirement-set.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet\Item;
+namespace Edgenet\Item;
 
 
 class Requirement_Set {

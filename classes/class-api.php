@@ -2,18 +2,18 @@
 /**
  * Filename class-api.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
 /**
  * Class API
  *
  * Handles Edgenet API calls.
  *
- * @package USSC_Edgenet
+ * @package Edgenet
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -68,7 +68,7 @@ class API {
 
 		if ( 400 <= wp_remote_retrieve_response_code( $raw_response ) ) {
 			$response = new \WP_Error(
-				'ussc-edgenet-error-' . wp_remote_retrieve_response_code( $raw_response ),
+				'edgenet-error-' . wp_remote_retrieve_response_code( $raw_response ),
 				esc_html( wp_remote_retrieve_response_message( $raw_response ) ),
 				$raw_response
 			);

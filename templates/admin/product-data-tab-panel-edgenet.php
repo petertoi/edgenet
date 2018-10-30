@@ -2,12 +2,12 @@
 /**
  * Filename product-data-tab-panel-edgenet.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
 ?>
-<div id='ussc_edgenet' class='panel woocommerce_options_panel'>
+<div id='edgenet' class='panel woocommerce_options_panel'>
 	<?php foreach ( $data as $section_key => $metas ) : ?>
 		<h2 class="meta-title"><?php echo esc_html( ucfirst( $section_key ) ); ?></h2>
 		<?php if ( ! empty( $metas ) ) : ?>

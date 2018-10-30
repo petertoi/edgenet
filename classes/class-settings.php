@@ -2,20 +2,20 @@
 /**
  * Filename class-settings.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
-use USSC_Edgenet\Item\Requirement_Set;
+use Edgenet\Item\Requirement_Set;
 
 /**
  * Class Settings
  *
- * Wrapper for accessing USSC_Edgenet options
+ * Wrapper for accessing Edgenet options
  *
- * @package USSC_Edgenet
+ * @package Edgenet
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -75,13 +75,68 @@ class Settings {
 	}
 
 	/**
-	 * Magic Getter for $field_map
+	 * Getter for $api attributes
+	 *
+	 * @param string $name The name of the api key.
+	 *
+	 * @return mixed
+	 */
+	public function get_api( $name ) {
+		switch ( $name ) {
+			case 'username':
+				if ( defined( 'EDGENET_PROD_USERNAME' ) ) {
+					return EDGENET_PROD_USERNAME;
+				}
+				break;
+			case 'secret':
+				if ( defined( 'EDGENET_PROD_SECRET' ) ) {
+					return EDGENET_PROD_SECRET;
+				}
+				break;
+			case 'data_owner':
+				if ( defined( 'EDGENET_DATA_OWNER' ) ) {
+					return EDGENET_DATA_OWNER;
+				}
+				break;
+			case 'requirement_set':
+				if ( defined( 'EDGENET_REQUIREMENT_SET' ) ) {
+					return EDGENET_REQUIREMENT_SET;
+				}
+				break;
+			case 'taxonomy_id':
+				if ( defined( 'EDGENET_TAXONOMY_ID' ) ) {
+					return EDGENET_TAXONOMY_ID;
+				}
+				break;
+			default:
+				break;
+		}
+
+		if ( isset( $this->api[ $name ] ) ) {
+			return $this->api[ $name ];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Setter for $api attributes
+	 *
+	 * @param string $name  The name of the api key.
+	 * @param mixed  $value The value to set.
+	 */
+	public function set_api( $name, $value ) {
+		$this->api[ $name ] = $value;
+	}
+
+	/**
+	 * Getter for $field_map attributes
 	 *
 	 * @param string $name The name of the post field or postmeta key.
 	 *
 	 * @return mixed
 	 */
-	public function __get( $name ) {
+	public function get_field_map( $name ) {
 		if ( in_array( $name, [ 'post_title', 'post_content', 'post_excerpt' ], true ) ) {
 			if ( isset( $this->field_map['post'][ $name ] ) ) {
 				return $this->field_map['post'][ $name ];
@@ -94,13 +149,63 @@ class Settings {
 	}
 
 	/**
-	 * Magic Setter for $field_map
+	 * Setter for $field_map attributes
 	 *
 	 * @param string $name  The name of the post field or postmeta key.
 	 * @param mixed  $value The value to set.
 	 */
-	public function __set( $name, $value ) {
-		$this->field_map[ $name ] = $value;
+	public function set_field_map( $name, $value ) {
+		$this->import[ $name ] = $value;
+	}
+
+	/**
+	 * Getter for $import attributes
+	 *
+	 * @param string $name The name of the import key.
+	 *
+	 * @return mixed
+	 */
+	public function get_import( $name ) {
+		if ( isset( $this->import[ $name ] ) ) {
+			return $this->import[ $name ];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Setter for $import attributes
+	 *
+	 * @param string $name  The name of the import key.
+	 * @param mixed  $value The value to set.
+	 */
+	public function set_import( $name, $value ) {
+		$this->import[ $name ] = $value;
+	}
+
+	/**
+	 * Getter for $requirement_set attributes
+	 *
+	 * @param string $name The name of the requirement_set key.
+	 *
+	 * @return mixed
+	 */
+	public function get_requirement_set( $name ) {
+		if ( isset( $this->requirement_set[ $name ] ) ) {
+			return $this->requirement_set[ $name ];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Setter for $requirement_set attributes
+	 *
+	 * @param string $name  The name of the requirement_set key.
+	 * @param mixed  $value The value to set.
+	 */
+	public function set_requirement_set( $name, $value ) {
+		$this->requirement_set[ $name ] = $value;
 	}
 
 	/**
@@ -172,7 +277,7 @@ class Settings {
 
 			$default_option = [
 				'value' => '',
-				'label' => __( ' - Select Attribute Group - ', 'ussc' ),
+				'label' => __( ' - Select Attribute Group - ', 'edgenet' ),
 			];
 
 			$options = array_map( function ( $group ) {
@@ -210,7 +315,7 @@ class Settings {
 		if ( empty( $this->cache[ __FUNCTION__ ] ) ) {
 			$default_option = [
 				'value' => '',
-				'label' => __( ' - Select Attribute - ', 'ussc' ),
+				'label' => __( ' - Select Attribute - ', 'edgenet' ),
 			];
 
 			$options = array_map( function ( $att ) {
@@ -248,7 +353,7 @@ class Settings {
 		if ( empty( $this->cache[ __FUNCTION__ ] ) ) {
 			$default_option = [
 				'value' => '',
-				'label' => __( ' - Select User for Import - ', 'ussc' ),
+				'label' => __( ' - Select User for Import - ', 'edgenet' ),
 			];
 
 			$user_args  = [
@@ -329,6 +434,8 @@ class Settings {
 	 * @return bool
 	 */
 	public function is_requirement_set_valid() {
-		return ( isset( $this->requirement_set ) );
+		return ( $this->requirement_set instanceof Requirement_Set );
 	}
 }
+
+

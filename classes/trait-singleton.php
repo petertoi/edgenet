@@ -2,12 +2,12 @@
 /**
  * Reusable singleton trait.
  *
- * @package USSC_Edgenet
+ * @package Edgenet
  * @author peter
  * @date 2018-08-29
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
 trait Singleton {
 	/**
@@ -39,13 +39,13 @@ trait Singleton {
 	 * Forbid cloning.
 	 */
 	public function __clone() {
-		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin&#8217; huh?', 'ussc' ), '1.0' );
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin&#8217; huh?', 'edgenet' ), '1.0' );
 	}
 
 	/**
 	 * Forbid unserialization.
 	 */
 	public function __wakeup() {
-		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin&#8217; huh?', 'ussc' ), '1.0' );
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin&#8217; huh?', 'edgenet' ), '1.0' );
 	}
 }

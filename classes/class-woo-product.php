@@ -2,18 +2,18 @@
 /**
  * Filename class-woo-product.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
 /**
  * Class Woo_Product
  *
  * Summary
  *
- * @package USSC_Edgenet
+ * @package Edgenet
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -38,7 +38,7 @@ class Woo_Product {
 
 		$tabs[] = [
 			'label'    => __( 'Edgenet' ),
-			'target'   => 'ussc_edgenet',
+			'target'   => 'edgenet',
 			'class'    => [],
 			'priority' => 100,
 		];

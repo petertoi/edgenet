@@ -2,20 +2,20 @@
 /**
  * Filename class-admin.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet;
+namespace Edgenet;
 
-use USSC_Edgenet\Post_Types\Document;
+use Edgenet\Post_Types\Document;
 
 /**
  * Class Admin
  *
  * Summary
  *
- * @package USSC_Edgenet
+ * @package Edgenet
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -37,9 +37,9 @@ class Admin {
 		add_submenu_page(
 			'woocommerce',
 			'Edgenet API Settings',
-			'Edgenet API',
+			'Edgenet',
 			'manage_woocommerce',
-			'ussc-edgenet',
+			'edgenet',
 			[ $this, 'edgenet_settings_page_callback' ]
 		);
 	}
@@ -58,13 +58,13 @@ class Admin {
 	 */
 	public function admin_enqueue_scripts( $hook_suffix ) {
 		if (
-			'woocommerce_page_ussc-edgenet' !== $hook_suffix
+			'woocommerce_page_edgenet' !== $hook_suffix
 			&& 'post.php' !== $hook_suffix
 		) {
 			return;
 		}
-		wp_enqueue_style( 'ussc-edgenet-admin', edgenet()->get_assets_url( 'styles/admin.css' ), [], Edgenet::VERSION );
-		wp_enqueue_script( 'ussc-edgenet-admin', edgenet()->get_assets_url( 'scripts/admin.js' ), [ 'jquery', 'jquery-ui-tabs' ], Edgenet::VERSION, true );
+		wp_enqueue_style( 'edgenet-admin', edgenet()->get_assets_url( 'styles/admin.css' ), [], Edgenet::VERSION );
+		wp_enqueue_script( 'edgenet-admin', edgenet()->get_assets_url( 'scripts/admin.js' ), [ 'jquery', 'jquery-ui-tabs' ], Edgenet::VERSION, true );
 	}
 
 	/**
@@ -77,7 +77,7 @@ class Admin {
 			return false;
 		}
 
-		if ( ! isset( $_REQUEST['page'] ) || 'ussc-edgenet' !== $_REQUEST['page'] ) { // phpcs:ignore
+		if ( ! isset( $_REQUEST['page'] ) || 'edgenet' !== $_REQUEST['page'] ) { // phpcs:ignore
 			return false;
 		}
 
@@ -85,10 +85,10 @@ class Admin {
 			return false;
 		}
 
-		check_admin_referer( 'ussc-edgenet' );
+		check_admin_referer( 'edgenet' );
 
 		// Find out which action was submitted.
-		$actions  = filter_input( INPUT_POST, 'edgenet_action', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
+		$actions = filter_input( INPUT_POST, 'edgenet_action', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
 		$action  = key( $actions );
 
 		$settings = filter_input( INPUT_POST, 'edgenet_settings', FILTER_DEFAULT, [ 'flags' => FILTER_REQUIRE_ARRAY ] );
@@ -101,7 +101,7 @@ class Admin {
 					&& ! edgenet()->settings->is_requirement_set_valid()
 				) {
 					// API settings valid? Requirement set empty? Let's update it and save a step. Bonus!
-					edgenet()->importer->import_requirement_set( edgenet()->settings->requirement_set );
+					edgenet()->importer->import_requirement_set( edgenet()->settings->get_api( 'requirement_set' ) );
 				}
 
 				break;
@@ -113,7 +113,7 @@ class Admin {
 				$this->save_import_settings( $settings );
 				break;
 			case 'import_requirement_set':
-				edgenet()->importer->import_requirement_set( edgenet()->settings->api['requirement_set'] );
+				edgenet()->importer->import_requirement_set( edgenet()->settings->get_api( 'requirement_set' ) );
 
 				break;
 			case 'import_products':

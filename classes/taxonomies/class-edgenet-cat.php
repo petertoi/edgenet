@@ -2,20 +2,20 @@
 /**
  * Filename class-edgenet-cat.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet\Taxonomies;
+namespace Edgenet\Taxonomies;
 
-use USSC_Edgenet\Template;
+use Edgenet\Template;
 
 /**
  * Class Edgenet_Cat
  *
  * Summary
  *
- * @package USSC_Edgenet\Taxonomies
+ * @package Edgenet\Taxonomies
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -64,7 +64,7 @@ class Edgenet_Cat {
 			self::TAXONOMY,
 			'product',
 			[
-				'label'        => __( 'Edgenet Categories', 'ussc' ),
+				'label'        => __( 'Edgenet Categories', 'edgenet' ),
 				'rewrite'      => [ 'slug' => self::REWRITE ],
 				'hierarchical' => true,
 			]
@@ -218,7 +218,7 @@ class Edgenet_Cat {
 
 		$i = array_search( 'slug', array_keys( $columns ), true );
 
-		$new_col = [ 'product_cats' => __( 'Linked Product Categories', 'ussc' ) ];
+		$new_col = [ 'product_cats' => __( 'Linked Product Categories', 'edgenet' ) ];
 
 		$columns = array_slice( $columns, 0, $i ) + $new_col + array_slice( $columns, 1 );
 

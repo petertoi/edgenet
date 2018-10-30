@@ -2,18 +2,18 @@
 /**
  * Filename class-brand.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet\Taxonomies;
+namespace Edgenet\Taxonomies;
 
 /**
  * Class Brand
  *
  * Summary
  *
- * @package USSC_Edgenet\Taxonomies
+ * @package Edgenet\Taxonomies
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -46,7 +46,7 @@ class Brand {
 			self::TAXONOMY,
 			'product',
 			[
-				'label'        => __( 'Brands', 'ussc' ),
+				'label'        => __( 'Brands', 'edgenet' ),
 				'rewrite'      => [ 'slug' => self::REWRITE ],
 				'hierarchical' => false,
 			]
@@ -61,7 +61,7 @@ class Brand {
 	 * @return mixed Revised columns.
 	 */
 	public function filter_posts_columns( $columns ) {
-		$columns['brand'] = __( 'Brand', 'ussc' );
+		$columns['brand'] = __( 'Brand', 'edgenet' );
 
 		return $columns;
 	}

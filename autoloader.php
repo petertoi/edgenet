@@ -2,20 +2,21 @@
 /**
  * Autoloader.
  *
- * @package USSC_Edgenet
+ * @package Edgenet
+ * @since   1.0.0
  * @author  Peter Toi <peter@petertoi.com>
  */
 
 /**
  * Autoload Classes
  *
- * Pattern: USSC_Edgenet\My_Module\My_Class_Name -> classes/my-module/class-my-class-name.php.
+ * Pattern: Edgenet\My_Module\My_Class_Name -> classes/my-module/class-my-class-name.php.
  *
  * @throws \Exception Function isn't callable.
  */
 try {
 	spl_autoload_register( function ( $class ) {
-		$namespace = 'USSC_Edgenet';
+		$namespace = 'Edgenet';
 
 		$base_dir = __DIR__ . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR;
 
@@ -55,5 +56,5 @@ try {
 		return false;
 	} );
 } catch ( \Exception $e ) {
-	die( $e->getMessage() );
+	die( $e->getMessage() ); // phpcs:ignore
 }

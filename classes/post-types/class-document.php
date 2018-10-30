@@ -2,15 +2,15 @@
 /**
  * Filename class-documents.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  *
  */
 
-namespace USSC_Edgenet\Post_Types;
+namespace Edgenet\Post_Types;
 
 
-use USSC_Edgenet\Template;
+use Edgenet\Template;
 
 if ( ! defined( 'WPINC' ) ) {
 	die;
@@ -59,19 +59,19 @@ class Document {
 		 * Document post type labels.
 		 */
 		$labels = [
-			'name'               => esc_html_x( 'Documents', 'Documents Post Type General Name', 'ussc' ),
-			'singular_name'      => esc_html_x( 'Document', 'Documents Post Type Singular Name', 'ussc' ),
-			'add_new'            => esc_html__( 'Add New', 'ussc' ),
-			'add_new_item'       => esc_html__( 'Add New Document', 'ussc' ),
-			'edit_item'          => esc_html__( 'Edit Document', 'ussc' ),
-			'new_item'           => esc_html__( 'New Document', 'ussc' ),
-			'view_item'          => esc_html__( 'View Document', 'ussc' ),
-			'search_items'       => esc_html__( 'Search Documents', 'ussc' ),
-			'not_found'          => esc_html__( 'No Documents found', 'ussc' ),
-			'not_found_in_trash' => esc_html__( 'No Documents found in Trash', 'ussc' ),
+			'name'               => esc_html_x( 'Documents', 'Documents Post Type General Name', 'edgenet' ),
+			'singular_name'      => esc_html_x( 'Document', 'Documents Post Type Singular Name', 'edgenet' ),
+			'add_new'            => esc_html__( 'Add New', 'edgenet' ),
+			'add_new_item'       => esc_html__( 'Add New Document', 'edgenet' ),
+			'edit_item'          => esc_html__( 'Edit Document', 'edgenet' ),
+			'new_item'           => esc_html__( 'New Document', 'edgenet' ),
+			'view_item'          => esc_html__( 'View Document', 'edgenet' ),
+			'search_items'       => esc_html__( 'Search Documents', 'edgenet' ),
+			'not_found'          => esc_html__( 'No Documents found', 'edgenet' ),
+			'not_found_in_trash' => esc_html__( 'No Documents found in Trash', 'edgenet' ),
 			'parent_item_colon'  => '',
-			'all_items'          => esc_html__( 'Documents', 'ussc' ),
-			'menu_name'          => esc_html__( 'Documents', 'ussc' ),
+			'all_items'          => esc_html__( 'Documents', 'edgenet' ),
+			'menu_name'          => esc_html__( 'Documents', 'edgenet' ),
 		];
 
 		/**
@@ -83,7 +83,7 @@ class Document {
 		 * Document post type args
 		 */
 		$args = [
-			'description'         => esc_html__( 'Product documents imported from Edgenet.', 'ussc' ),
+			'description'         => esc_html__( 'Product documents imported from Edgenet.', 'edgenet' ),
 			'labels'              => $labels,
 			'public'              => false,
 			'publicly_queryable'  => false,
@@ -108,8 +108,8 @@ class Document {
 	 */
 	public function add_meta_box() {
 		add_meta_box(
-			'ussc-document-file',
-			__( 'File', 'ussc' ),
+			'edgenet-document-file',
+			__( 'File', 'edgenet' ),
 			[ $this, 'meta_html' ],
 			self::POST_TYPE,
 			'normal',
@@ -146,7 +146,7 @@ class Document {
 	/**
 	 * Save Document attachment.
 	 *
-	 * Checks for presence of ussc_action in $_POST before attempting save or delete of attachment.
+	 * Checks for presence of edgenet_action in $_POST before attempting save or delete of attachment.
 	 *
 	 * @param int $post_id The Post ID.
 	 */
@@ -155,13 +155,13 @@ class Document {
 			return;
 		}
 
-		$ussc_action = filter_input( INPUT_POST, 'ussc_action', FILTER_SANITIZE_STRING );
+		$edgenet_action = filter_input( INPUT_POST, 'edgenet_action', FILTER_SANITIZE_STRING );
 
-		if ( 'edit_document' !== $ussc_action ) {
+		if ( 'edit_document' !== $edgenet_action ) {
 			return;
 		}
 
-		$attachment_id = filter_input( INPUT_POST, 'ussc_attachment_id', FILTER_SANITIZE_NUMBER_INT );
+		$attachment_id = filter_input( INPUT_POST, 'edgenet_attachment_id', FILTER_SANITIZE_NUMBER_INT );
 
 		if ( $attachment_id ) {
 			update_post_meta( $post_id, self::META_ATTACHMENT_ID, $attachment_id );

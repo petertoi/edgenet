@@ -1,1 +1,1 @@
-# USSC Edgenet Integration
+# EDGENET Edgenet Integration

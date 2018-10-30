@@ -7,30 +7,30 @@
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
- * @link              https://usstove.com
+ * @link              https://petertoi.com
  * @since             1.0.0
- * @package           USSC_Edgenet
+ * @package           Edgenet
  *
  * @wordpress-plugin
- * Plugin Name:       USSC Edgenet Integration
- * Plugin URI:        https://usstove.com
+ * Plugin Name:       Edgenet
+ * Plugin URI:        https://petertoi.com
  * Description:       Sync product content on Edgenet with WordPress and Woocommerce
  * Version:           1.0.0-alpha
  * Author:            Peter Toi <peter@petertoi.com>
  * Author URI:        http://petertoi.com
- * Text Domain:       ussc
+ * Text Domain:       edgenet
  * Domain Path:       /languages
  */
 
 require 'autoloader.php';
 
 /**
- * Provide access to the WP_Vote without adding to $GLOBALS
+ * Provide access to Edgenet without adding to $GLOBALS
  *
- * @return \USSC_Edgenet\Edgenet The USSC_Edgenet singleton
+ * @return \Edgenet\Edgenet The Edgenet singleton
  */
 function edgenet() {
-	$edgenet = \USSC_Edgenet\Edgenet::get_instance();
+	$edgenet = \Edgenet\Edgenet::get_instance();
 
 	return $edgenet;
 }

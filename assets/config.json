@@ -9,7 +9,7 @@
       "./styles/admin.scss"
     ]
   },
-  "publicPath": "/wp-content/plugins/ussc-edgenet-integration",
+  "publicPath": "/wp-content/plugins/edgenet-integration",
   "devUrl": "https://usstove.test",
   "proxyUrl": "https://localhost:3000",
   "cacheBusting": "[name]_[hash:8]",

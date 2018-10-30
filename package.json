@@ -1,9 +1,9 @@
 {
-  "name": "ussc-edgenet-plugin",
+  "name": "edgenet",
   "version": "1.0.0",
-  "description": "WordPress plugin",
+  "description": "WordPress plugin for interfacing Edgenet with WooCommerce",
   "private": true,
-  "repository": "git@bitbucket.org:toibox/ussc-edgenet-plugin.git",
+  "repository": "git@bitbucket.org:toibox/edgenet.git",
   "author": "Peter Toi <peter@petertoi.com>",
   "license": "GPL",
   "scripts": {

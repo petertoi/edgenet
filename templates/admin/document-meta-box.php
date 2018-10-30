@@ -2,7 +2,7 @@
 /**
  * Filename document-meta-box.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
@@ -22,24 +22,24 @@
 			);
 		}
 
-		printf( '<input type="hidden" name="ussc_attachment_id" id="ussc_attachment_id" class="ussc_attachment_id" value="%1$s" />',
+		printf( '<input type="hidden" name="edgenet_attachment_id" id="edgenet_attachment_id" class="edgenet_attachment_id" value="%1$s" />',
 			absint( $data['attachment_id'] )
 		);
 		?>
 	</div>
 	<?php if ( empty( $data['edgenet_id'] ) ) : ?>
-	<input type="hidden" name="ussc_action" value="edit_document" />
-	<input type="button" id="ussc_upload_file" class="button" value="<?php esc_attr_e( 'Upload File', 'ussc' ); ?>" />
+	<input type="hidden" name="edgenet_action" value="edit_document" />
+	<input type="button" id="edgenet_upload_file" class="button" value="<?php esc_attr_e( 'Upload File', 'edgenet' ); ?>" />
 
 		<script>
 
-          jQuery('#ussc_upload_file').click(function() {
+          jQuery('#edgenet_upload_file').click(function() {
 
             var send_attachment = wp.media.editor.send.attachment;
 
             wp.media.editor.send.attachment = function(props, attachment) {
               jQuery('.file-link').hide();
-              jQuery('#ussc_attachment_id').show().val(attachment.id);
+              jQuery('#edgenet_attachment_id').show().val(attachment.id);
 
               wp.media.editor.send.attachment = send_attachment;
             };
@@ -51,6 +51,6 @@
 		</script>
 
 	<?php else : ?>
-		<p><?php esc_html_e( 'Note: This file is managed by Edgenet.', 'ussc' ); ?></p>
+		<p><?php esc_html_e( 'Note: This file is managed by Edgenet.', 'edgenet' ); ?></p>
 	<?php endif; ?>
 </div>

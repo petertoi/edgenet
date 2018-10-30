@@ -2,18 +2,18 @@
 /**
  * Filename class-attribute-group.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet\Item;
+namespace Edgenet\Item;
 
 /**
  * Class Attribute_Group
  *
  * Summary
  *
- * @package USSC_Edgenet\Item
+ * @package Edgenet\Item
  * @author  Peter Toi <peter@petertoi.com>
  * @version
  */

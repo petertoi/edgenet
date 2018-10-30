@@ -2,23 +2,23 @@
 /**
  * Filename settings-tab-import.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
 ?>
 <?php
 
-use USSC_Edgenet\Template;
+use Edgenet\Template;
 
 ?>
-<h2><?php esc_html_e( 'Import Settings', 'ussc' ); ?></h2>
+<h2><?php esc_html_e( 'Import Settings', 'edgenet' ); ?></h2>
 <table class="form-table">
 	<tbody>
 
 	<?php
 	echo Template::render_admin_table_row(
-		__( 'Import User', 'ussc' ),
+		__( 'Import User', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[import][user]',
 			'user',
@@ -31,11 +31,11 @@ use USSC_Edgenet\Template;
 	);
 
 	echo Template::render_admin_table_row(
-		__( 'Enable Automatic Import', 'ussc' ),
+		__( 'Enable Automatic Import', 'edgenet' ),
 		Template::render_select(
 			'edgenet_settings[import][is_cron_enabled]',
 			'is_cron_enabled',
-			[ [ 'value' => 'on', 'label' => __('On', 'ussc') ], [ 'value' => 'off', 'label' => __('Off', 'ussc')  ] ], // phpcs:ignore
+			[ [ 'value' => 'on', 'label' => __('On', 'edgenet') ], [ 'value' => 'off', 'label' => __('Off', 'edgenet')  ] ], // phpcs:ignore
 			isset( edgenet()->settings->import['is_cron_enabled'] )
 				? edgenet()->settings->import['is_cron_enabled']
 				: 'off',
@@ -47,9 +47,9 @@ use USSC_Edgenet\Template;
 	</tbody>
 </table>
 
-<?php submit_button( __( 'Save Import Settings', 'ussc' ), 'primary', 'edgenet_action[save_import]' ); ?>
+<?php submit_button( __( 'Save Import Settings', 'edgenet' ), 'primary', 'edgenet_action[save_import]' ); ?>
 
 <?php if ( edgenet()->debug ) : ?>
-	<h2><?php esc_html_e( 'Debug', 'ussc' ); ?></h2>
+	<h2><?php esc_html_e( 'Debug', 'edgenet' ); ?></h2>
 	<pre><?php print_r( edgenet()->settings->import ); // phpcs:ignore ?></pre>
 <?php endif; ?>

@@ -2,18 +2,18 @@
 /**
  * Filename class-attribute.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet\Item;
+namespace Edgenet\Item;
 
 /**
  * Class Attribute
  *
  * Summary
  *
- * @package USSC_Edgenet\Item
+ * @package Edgenet\Item
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */

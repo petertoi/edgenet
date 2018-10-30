@@ -2,20 +2,20 @@
 /**
  * Filename class-doc-type.php
  *
- * @package ussc
+ * @package edgenet
  * @author  Peter Toi <peter@petertoi.com>
  */
 
-namespace USSC_Edgenet\Taxonomies;
+namespace Edgenet\Taxonomies;
 
-use USSC_Edgenet\Post_Types\Document;
+use Edgenet\Post_Types\Document;
 
 /**
  * Class Doc_Type
  *
  * Summary
  *
- * @package USSC_Edgenet\Taxonomies
+ * @package Edgenet\Taxonomies
  * @author  Peter Toi <peter@petertoi.com>
  * @version 1.0.0
  */
@@ -50,7 +50,7 @@ class Doc_Type {
 			self::TAXONOMY,
 			Document::POST_TYPE,
 			[
-				'label'        => __( 'Doc Types', 'ussc' ),
+				'label'        => __( 'Doc Types', 'edgenet' ),
 				'rewrite'      => [ 'slug' => self::REWRITE ],
 				'hierarchical' => true,
 			]
