@@ -15,7 +15,7 @@
  * Plugin Name:       Edgenet
  * Plugin URI:        https://petertoi.com
  * Description:       Sync product content on Edgenet with WordPress and Woocommerce
- * Version:           1.0.0-alpha
+ * Version:           1.0.0
  * Author:            Peter Toi <peter@petertoi.com>
  * Author URI:        http://petertoi.com
  * Text Domain:       edgenet
