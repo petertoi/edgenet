@@ -84,6 +84,8 @@ class Importer {
 	public function import_products( $product_ids = [], $force_update = false ) {
 		$status = [];
 
+		edgenet()->debug->notice( __( 'Importing Products' ), func_get_args() );
+
 		// Validate input.
 		if ( ! is_array( $product_ids ) ) {
 			_doing_it_wrong(
@@ -134,6 +136,8 @@ class Importer {
 
 		// Clear import mutex.
 		delete_transient( self::META_IMPORT_MUTEX );
+
+		edgenet()->debug->notice( __( 'Importing Products Complete' ) );
 
 		return $status;
 	}
@@ -289,18 +293,23 @@ class Importer {
 	 *
 	 * @return array
 	 */
-	public function sync_edgenet_cat_to_product_cat() {
+	public function sync_edgenet_cat_to_product_cat( $term_ids = [] ) {
 		$sync_status = [];
 
+		$edgenet_term_args = [
+			'taxonomy'   => Edgenet_Cat::TAXONOMY,
+			'hide_empty' => false, // TODO: should push empty tax?
+		];
+
+		if ( ! empty( $term_ids ) ) {
+			$edgenet_term_args['include'] = $term_ids;
+		}
 		/**
 		 * Array of edgenet_cat terms.
 		 *
 		 * @var \WP_Term[] $edgenet_terms
 		 */
-		$edgenet_terms = get_terms( [
-			'taxonomy'   => Edgenet_Cat::TAXONOMY,
-			'hide_empty' => false, // TODO: should push empty tax?
-		] );
+		$edgenet_terms = get_terms( $edgenet_term_args );
 
 		foreach ( $edgenet_terms as $edgenet_term ) {
 			$status = [
@@ -344,6 +353,18 @@ class Importer {
 			$sync_status[] = $status;
 			unset( $status );
 		}
+
+		// Update product_cat term counts.
+		$product_cats = get_terms( [
+			'taxonomy'   => 'product_cat',
+			'hide_empty' => false,
+		] );
+
+		$product_cat_term_tax_ids = array_map( function ( $term ) {
+			return $term->term_taxonomy_id;
+		}, $product_cats );
+
+		wp_update_term_count( $product_cat_term_tax_ids, 'product_cat', true );
 
 		return $sync_status;
 
@@ -780,7 +801,7 @@ class Importer {
 
 				if ( ! empty( $leaf_term ) ) {
 					$leaf_term = array_shift( $leaf_term );
-					wp_set_object_terms( $post_id, $leaf_term->term_id, Edgenet_Cat::TAXONOMY, true );
+					wp_set_object_terms( $post_id, $leaf_term->term_id, Edgenet_Cat::TAXONOMY );
 				}
 			}
 		}

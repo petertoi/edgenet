@@ -125,6 +125,10 @@ class Debug {
 
 		$status = (bool) fputs( $fp, $msg );
 
+		if ( isset( $data ) ) {
+			fputs( $fp, print_r( $data, true ) ); // phpcs:ignore
+		}
+
 		fclose( $fp ); // phpcs:ignore
 
 		return $status;

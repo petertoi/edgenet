@@ -115,7 +115,6 @@ class Edgenet {
 			new Admin();
 			new Woo_Product();
 		}
-
 	}
 
 	/**
