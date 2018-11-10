@@ -266,22 +266,28 @@ class Admin {
 
 	}
 
+	/**
+	 * Delete all documents downloaded from Edgenet.
+	 */
 	private function delete_docs() {
 		$posts = get_posts( [
 			'post_type'   => Post_Types\Document::POST_TYPE,
 			'numberposts' => - 1,
-			'meta_query'  => [
+			'meta_query'  => [ // phpcs:ignore
 				[
 					'key'     => '_edgenet_id',
-					'compare' => 'EXISTS' // this should work...
-				]
+					'compare' => 'EXISTS',
+				],
 			],
 		] );
 		foreach ( $posts as $post ) {
 			$attachment_id = get_post_meta( $post->ID, '_edgenet_wp_attachment_id', true );
-			$f             = wp_delete_attachment( $attachment_id, true );
-			// Delete's each post.
-			$r = wp_delete_post( $post->ID, true );
+
+			// Delete the document from the media library.
+			wp_delete_attachment( $attachment_id, true );
+
+			// Delete the Document post.
+			wp_delete_post( $post->ID, true );
 		}
 	}
 
@@ -299,11 +305,11 @@ class Admin {
 		$posts = get_posts( [
 			'post_type'   => 'product',
 			'numberposts' => - 1,
-			'meta_query'  => [
+			'meta_query'  => [ // phpcs:ignore
 				[
 					'key'     => '_edgenet_id',
-					'compare' => 'EXISTS' // this should work...
-				]
+					'compare' => 'EXISTS',
+				],
 			],
 		] );
 		foreach ( $posts as $post ) {

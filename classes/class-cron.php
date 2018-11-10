@@ -74,7 +74,7 @@ class CRON {
 			return $status;
 		}
 
-		$status['import'] = edgenet()->importer->import_products();
+		$status['import'] = edgenet()->importer->import_products( [], $force );
 
 		if ( is_wp_error( $status['import'] ) ) {
 			return $status;

@@ -311,7 +311,7 @@ use Edgenet\Template;
 
 <?php submit_button( __( 'Save Field Map', 'edgenet' ), 'primary', 'edgenet_action[save_field_map]' ); ?>
 
-<?php if ( edgenet()->debug ) : ?>
+<?php if ( edgenet()->debug->enabled ) : ?>
 	<h2><?php esc_html_e( 'Debug', 'edgenet' ); ?></h2>
 	<pre><?php print_r( edgenet()->settings->field_map ); // phpcs:ignore ?></pre>
 <?php endif; ?>

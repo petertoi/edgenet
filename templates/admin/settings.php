@@ -30,7 +30,7 @@ use Edgenet\Template;
 				<?php if ( edgenet()->settings->is_core_valid() ) : ?>
 					<li><a href="#actions" class="nav-tab"><?php esc_html_e( 'Actions', 'edgenet' ); ?></a></li>
 				<?php endif; ?>
-				<?php if ( edgenet()->debug ) : ?>
+				<?php if ( edgenet()->debug->enabled ) : ?>
 					<li><a href="#debug" class="nav-tab"><?php esc_html_e( 'Debug', 'edgenet' ); ?></a></li>
 				<?php endif; ?>
 			</ul>
@@ -52,7 +52,7 @@ use Edgenet\Template;
 					<?php Template::load( 'admin/settings-tab-actions' ); ?>
 				</div>
 			<?php endif; ?>
-			<?php if ( edgenet()->debug ) : ?>
+			<?php if ( edgenet()->debug->enabled ) : ?>
 				<div id="debug">
 					<?php Template::load( 'admin/settings-tab-debug' ); ?>
 				</div>

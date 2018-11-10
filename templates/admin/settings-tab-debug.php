@@ -8,7 +8,7 @@
 
 ?>
 
-<?php if ( edgenet()->debug ) : ?>
+<?php if ( edgenet()->debug->enabled ) : ?>
 	<h2><?php esc_html_e( 'Debug', 'edgenet' ); ?></h2>
 	<pre><?php print_r( edgenet() ); // phpcs:ignore ?></pre>
 <?php endif; ?>

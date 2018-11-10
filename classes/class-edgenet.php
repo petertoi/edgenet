@@ -39,18 +39,18 @@ class Edgenet {
 	public $plugin_url;
 
 	/**
-	 * Debug mode
-	 *
-	 * @var bool
-	 */
-	public $debug = false;
-
-	/**
 	 * Assets manifest
 	 *
 	 * @var array
 	 */
 	public $assets;
+
+	/**
+	 * Reference to Debug object.
+	 *
+	 * @var Debug
+	 */
+	public $debug;
 
 	/**
 	 * Settings
@@ -80,9 +80,11 @@ class Edgenet {
 		$this->plugin_path = plugin_dir_path( __DIR__ );
 		$this->plugin_url  = plugin_dir_url( __DIR__ );
 
+		$this->debug = Debug::get_instance();
+
 		// Init Debug early.
 		if ( defined( 'EDGENET_DEBUG' ) && EDGENET_DEBUG ) {
-			$this->debug = true;
+			$this->debug->enable( Debug::LOG_ALL ^ Debug::LOG_INFO );
 		}
 
 		// Init Post Types & Taxonomies.

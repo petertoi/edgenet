@@ -60,7 +60,7 @@ use Edgenet\Template;
 		</tbody>
 	</table>
 
-<?php if ( edgenet()->debug ) : ?>
+<?php if ( edgenet()->debug->enabled ) : ?>
 	<h2><?php esc_html_e( 'Remove Imported Data', 'edgenet' ); ?></h2>
 	<table class="form-table">
 		<tbody>
