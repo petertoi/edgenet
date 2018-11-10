@@ -780,7 +780,7 @@ class Importer {
 
 				if ( ! empty( $leaf_term ) ) {
 					$leaf_term = array_shift( $leaf_term );
-					wp_set_object_terms( $post_id, $leaf_term->term_id, Edgenet_Cat::TAXONOMY );
+					wp_set_object_terms( $post_id, $leaf_term->term_id, Edgenet_Cat::TAXONOMY, true );
 				}
 			}
 		}

@@ -317,13 +317,18 @@ class API_Adapter {
 	/**
 	 * Get a Product.
 	 *
-	 * @param string $product_id The product ID.
+	 * @param string $product_id    The product ID.
+	 * @param bool   $last_verified Whether to return the last verified version or the current state.
 	 *
 	 * @return Product|\WP_Error
 	 */
-	public function product( $product_id ) {
+	public function product( $product_id, $last_verified = true ) {
 
 		$path = 'api/product/' . rawurlencode( $product_id );
+
+		if ( $last_verified ) {
+			$path = trailingslashit( $path ) . 'verified';
+		}
 
 		$response = $this->get( $path );
 
