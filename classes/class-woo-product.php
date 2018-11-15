@@ -51,15 +51,54 @@ class Woo_Product {
 	 */
 	public function add_product_data_panel() {
 
-		global $post, $thepostid, $product_object;
+		global $post;
 
 		$data = [];
 
-		$data['features']            = get_post_meta( $post->ID, '_features', true );
-		$data['category_attributes'] = get_post_meta( $post->ID, '_category_attributes', true );
-		$data['dimensions']          = get_post_meta( $post->ID, '_dimensions', true );
-		$data['other']               = get_post_meta( $post->ID, '_other', true );
-		$data['regulatory']          = get_post_meta( $post->ID, '_regulatory', true );
+		$data['core'] = [
+			[
+				'label' => __( 'Model #' ),
+				'value' => get_post_meta( $post->ID, '_model_no', true ),
+			],
+			[
+				'label' => __( 'GTIN' ),
+				'value' => get_post_meta( $post->ID, '_gtin', true ),
+			],
+			[
+				'label' => __( 'Edgenet ID' ),
+				'value' => sprintf(
+					'%1s<br><a href="https://platform.edgenet.com/products/detail/%1$s">%2s</a>',
+					esc_attr( get_post_meta( $post->ID, '_edgenet_id', true ) ),
+					esc_html__( 'View on Edgenet', 'edgenet' )
+				),
+			],
+			[
+				'label' => __( 'Last Verified Date Time' ),
+				'value' => get_post_meta( $post->ID, '_last_verified_date_time', true ),
+			],
+			[
+				'label' => __( 'Is Verified' ),
+				'value' => get_post_meta( $post->ID, '_is_verified', true ) ? __( 'True', 'edgenet' ) : __( 'False', 'edgenet' ),
+			],
+			[
+				'label' => __( 'Archived' ),
+				'value' => get_post_meta( $post->ID, '_archived', true ) ? __( 'True', 'edgenet' ) : __( 'False', 'edgenet' ),
+			],
+			[
+				'label' => __( 'Archived Metadata' ),
+				'value' => maybe_serialize( get_post_meta( $post->ID, '_archived_metadata', true ) ),
+			],
+			[
+				'label' => __( 'Record Date' ),
+				'value' => get_post_meta( $post->ID, '_record_date', true ),
+			],
+		];
+
+		$data['attribute_group']['features']            = get_post_meta( $post->ID, '_features', true );
+		$data['attribute_group']['category_attributes'] = get_post_meta( $post->ID, '_category_attributes', true );
+		$data['attribute_group']['dimensions']          = get_post_meta( $post->ID, '_dimensions', true );
+		$data['attribute_group']['other']               = get_post_meta( $post->ID, '_other', true );
+		$data['attribute_group']['regulatory']          = get_post_meta( $post->ID, '_regulatory', true );
 
 		Template::load( 'admin/product-data-tab-panel-edgenet', $data );
 
