@@ -603,7 +603,7 @@ class Importer {
 
 		// Set $file_ext via exif, if not provided explicitly via $args.
 		$file_ext = ( empty( $args['file_ext'] ) )
-			? image_type_to_extension( exif_imagetype( $url ), false )
+			? \image_type_to_extension( \exif_imagetype( $url ), false )
 			: $args['file_ext'];
 
 		// Save as a temporary file.
