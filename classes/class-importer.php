@@ -291,6 +291,8 @@ class Importer {
 	/**
 	 * Sync Edgenet Terms to Product Categories
 	 *
+	 * @param int[] $term_ids An array of Term IDs.
+	 *
 	 * @return array
 	 */
 	public function sync_edgenet_cat_to_product_cat( $term_ids = [] ) {
