@@ -220,6 +220,8 @@ class Importer {
 						update_post_meta( $post_id, $meta_key, $meta_value );
 					}
 				}
+
+				// TODO: What about old meta_input?
 			} else {
 				// No update, set reference to post for assets, files, and taxonomy calls yet to come.
 				$update_skipped = true;
@@ -823,7 +825,7 @@ class Importer {
 
 		if ( ! is_wp_error( $brand ) && ! empty( $brand ) ) {
 
-			// add the term to the post
+			// add the term to the post.
 			$done = wp_set_object_terms( $post_id, $brand, Brand::TAXONOMY );
 
 			return $done;
