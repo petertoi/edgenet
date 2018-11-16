@@ -1,6 +1,6 @@
 {
   "name": "edgenet",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "WordPress plugin for interfacing Edgenet with WooCommerce",
   "private": true,
   "repository": "git@bitbucket.org:toibox/edgenet.git",

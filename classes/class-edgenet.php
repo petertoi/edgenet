@@ -20,7 +20,7 @@ use Edgenet\Taxonomies\Edgenet_Cat;
 class Edgenet {
 	use Singleton;
 
-	const VERSION = '1.0.0';
+	const VERSION = '1.0.1';
 
 	const ACTIVE_CRON_KEY = 'edgenet_cron_active';
 
