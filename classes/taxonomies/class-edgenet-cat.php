@@ -128,6 +128,10 @@ class Edgenet_Cat {
 			return;
 		}
 
+		if ( ! isset( $_POST[ self::META_EDGENET_2_PRODUCT ] ) ) {
+			return;
+		}
+
 		$safe_meta_vals = [];
 
 		// Sanitize input.
