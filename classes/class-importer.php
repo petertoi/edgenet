@@ -114,7 +114,7 @@ class Importer {
 				'DataOwner'                => edgenet()->settings->get_api( 'data_owner' ),
 				'Archived'                 => false,
 				'Desc'                     => false,
-				'Recipients'               => [ 'c964a170-12e7-4e70-bc72-11016d97864f' ],
+				'Recipients'               => [ edgenet()->settings->get_api( 'recipient' ) ],
 				'SubscriptionStatusFilter' => 'All',
 			] );
 		}

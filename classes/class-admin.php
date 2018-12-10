@@ -162,6 +162,7 @@ class Admin {
 			'username'        => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'secret'          => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'data_owner'      => [ 'filter' => FILTER_SANITIZE_STRING ],
+			'recipient'       => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'requirement_set' => [ 'filter' => FILTER_SANITIZE_STRING ],
 			'taxonomy_id'     => [ 'filter' => FILTER_SANITIZE_STRING ],
 		];

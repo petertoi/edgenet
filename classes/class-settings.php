@@ -98,6 +98,11 @@ class Settings {
 					return EDGENET_DATA_OWNER;
 				}
 				break;
+			case 'recipient':
+				if ( defined( 'EDGENET_RECIPIENT' ) ) {
+					return EDGENET_RECIPIENT;
+				}
+				break;
 			case 'requirement_set':
 				if ( defined( 'EDGENET_REQUIREMENT_SET' ) ) {
 					return EDGENET_REQUIREMENT_SET;
@@ -392,6 +397,7 @@ class Settings {
 			'data_owner',
 			'username',
 			'secret',
+			'recipient',
 			'requirement_set',
 			'taxonomy_id',
 		];

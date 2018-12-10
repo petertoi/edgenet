@@ -223,7 +223,7 @@ class API_Adapter {
 	/**
 	 * Retrieve a Requirement Set
 	 *
-	 * @param string $requirement_set_id UID of the Requirement Set. Try: c726fa92-7119-2e37-30fe-304a1a3e579d.
+	 * @param string $requirement_set_id UID of the Requirement Set.
 	 *
 	 * @return Requirement_Set|\WP_Error
 	 */
