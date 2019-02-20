@@ -11,6 +11,7 @@ use Edgenet\Post_Types\Document;
 use Edgenet\Taxonomies\Brand;
 use Edgenet\Taxonomies\Doc_Type;
 use Edgenet\Taxonomies\Edgenet_Cat;
+use Edgenet\Taxonomies\Fits_Stove_Type;
 
 /**
  * Class WP_Vote
@@ -92,6 +93,7 @@ class Edgenet {
 		new Doc_Type();
 		new Edgenet_Cat();
 		new Brand();
+		new Fits_Stove_Type();
 
 		// Init Settings.
 		$this->settings = new Settings();

@@ -114,6 +114,21 @@ use Edgenet\Template;
 			[]
 		)
 	);
+
+	/**
+	 * Fits Stove Type
+	 */
+	echo Template::render_admin_table_row(
+		__( 'Fits Stove Type', 'edgenet' ),
+		Template::render_select(
+			'edgenet_settings[field_map][postmeta][_fits_stove_type]',
+			'_fits_stove_type',
+			edgenet()->settings->get_attributes_for_select(),
+			edgenet()->settings->get_field_map( '_fits_stove_type' ),
+			[]
+		)
+	);
+
 	/**
 	 * Regular Price
 	 */

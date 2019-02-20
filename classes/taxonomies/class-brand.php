@@ -33,7 +33,7 @@ class Brand {
 	 * Brand constructor.
 	 */
 	public function __construct() {
-		add_action( 'init', [ $this, 'register_document_type_taxonomy' ] );
+		add_action( 'init', [ $this, 'register_brand_taxonomy' ] );
 		add_filter( 'manage_product_posts_columns', [ $this, 'filter_posts_columns' ] );
 		add_action( 'manage_product_posts_custom_column', [ $this, 'column_content' ], 9999, 2 );
 	}
@@ -41,7 +41,7 @@ class Brand {
 	/**
 	 * Register Brand and link to Product.
 	 */
-	public function register_document_type_taxonomy() {
+	public function register_brand_taxonomy() {
 		register_taxonomy(
 			self::TAXONOMY,
 			'product',
