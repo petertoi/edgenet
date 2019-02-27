@@ -130,6 +130,20 @@ use Edgenet\Template;
 	);
 
 	/**
+	 * Models Used With
+	 */
+	echo Template::render_admin_table_row(
+		__( 'Models Used With', 'edgenet' ),
+		Template::render_select(
+			'edgenet_settings[field_map][postmeta][_models_used_with]',
+			'_models_used_with',
+			edgenet()->settings->get_attributes_for_select(),
+			edgenet()->settings->get_field_map( '_models_used_with' ),
+			[]
+		)
+	);
+
+	/**
 	 * Regular Price
 	 */
 	echo Template::render_admin_table_row(

@@ -401,6 +401,7 @@ class Importer {
 			'_gtin'                       => $product->get_attribute_value( edgenet()->settings->get_field_map( '_gtin' ), '' ),
 			'_sku'                        => $product->get_attribute_value( edgenet()->settings->get_field_map( '_sku' ), '' ),
 			'_model_no'                   => $product->get_attribute_value( edgenet()->settings->get_field_map( '_model_no' ), '' ),
+			'_models_used_with'           => $product->get_attribute_value( edgenet()->settings->get_field_map( '_models_used_with' ), '' ),
 			'_regular_price'              => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->get_field_map( '_regular_price' ), '' ) ) ),
 			'_price'                      => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->get_field_map( '_regular_price' ), '' ) ) ),
 			'_weight'                     => floatval( str_replace( [ ',' ], [ '' ], $product->get_attribute_value( edgenet()->settings->get_field_map( '_weight' ), '' ) ) ),
