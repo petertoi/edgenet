@@ -287,9 +287,10 @@ class Importer {
 			// TODO: Should we pass $force_update into these functions?
 			$this->update_edgenet_brand( $product, $post_id );
 
-			// Set Fits Stove Type.
-			// TODO: Should we pass $force_update into these functions?
-			$this->update_edgenet_fits_stove_type( $product, $post_id );
+			/**
+			 * Allow developers to include additional functionality required for their theme.
+			 */
+			do_action( 'edgenet_import_product_after_update', $product, $post_id );
 		}
 
 		return $post_id;
@@ -832,29 +833,6 @@ class Importer {
 
 			// add the term to the post.
 			$done = wp_set_object_terms( $post_id, $brand, Brand::TAXONOMY );
-
-			return $done;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Assign Edgenet Fits Stove Type Term to Post
-	 *
-	 * @param Product $product product being imported.
-	 * @param int     $post_id The Product's \WP_Post id.
-	 *
-	 * @return array|int|\WP_Error|bool
-	 */
-	private function update_edgenet_fits_stove_type( $product, $post_id ) {
-		// Get Brand Name.
-		$fits_stove_type = $product->get_attribute_value( edgenet()->settings->get_field_map( '_fits_stove_type' ) );
-
-		if ( ! is_wp_error( $fits_stove_type ) && ! empty( $fits_stove_type ) ) {
-
-			// add the term to the post.
-			$done = wp_set_object_terms( $post_id, $fits_stove_type, Fits_Stove_Type::TAXONOMY );
 
 			return $done;
 		}

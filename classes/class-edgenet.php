@@ -93,7 +93,6 @@ class Edgenet {
 		new Doc_Type();
 		new Edgenet_Cat();
 		new Brand();
-		new Fits_Stove_Type();
 
 		// Init Settings.
 		$this->settings = new Settings();
