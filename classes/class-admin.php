@@ -25,7 +25,7 @@ class Admin {
 	 * Admin constructor.
 	 */
 	public function __construct() {
-		add_action( 'init', [ $this, 'save_edgenet_settings' ] );
+		add_action( 'init', [ $this, 'save_edgenet_settings' ], 999 );
 		add_action( 'admin_menu', [ $this, 'edgenet_settings_page_menu' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'admin_enqueue_scripts' ] );
 	}
@@ -118,10 +118,12 @@ class Admin {
 				break;
 			case 'import_products':
 				wp_schedule_single_event( time(), 'edgenet_forced_product_sync', [ 'force' => true ] );
+				edgenet()->debug->notice( __( 'Manual import triggered for all products.', 'edgenet' ) );
 				wp_cron();
 				break;
 			case 'import_product_by_id':
 				$product_id = filter_input( INPUT_POST, 'edgenet_import_product_id', FILTER_SANITIZE_STRING );
+				edgenet()->debug->notice( __( sprintf( 'Manual import triggered for product: %s', $product_id ), 'edgenet' ) );
 				edgenet()->importer->import_products( [ $product_id ], true );
 
 				break;

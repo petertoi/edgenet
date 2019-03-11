@@ -89,6 +89,7 @@ class Importer {
 
 		// Validate input.
 		if ( ! is_array( $product_ids ) ) {
+			edgenet()->debug->error( __( 'Please provide an array of Product IDs', 'edgenet' ) );
 			_doing_it_wrong(
 				__FUNCTION__,
 				wp_kses_post( __( 'Please provide an array of Product IDs', 'edgenet' ) ),
@@ -100,6 +101,8 @@ class Importer {
 		$import_active = get_transient( self::META_IMPORT_MUTEX );
 
 		if ( $import_active ) {
+			edgenet()->debug->warning( __( 'Another import is still underway. Please try again later.', 'edgenet' ) );
+
 			return new \WP_Error(
 				'edgenet-import-error',
 				__( 'Another import is still underway. Please try again later.', 'edgenet' )
@@ -111,6 +114,7 @@ class Importer {
 
 		// Get $product_ids via API if not provided.
 		if ( empty( $product_ids ) ) {
+			edgenet()->debug->notice( __( 'No product IDs provided. Getting list of all products...', 'edgenet' ) );
 			$product_ids = $this->get_product_ids( [
 				'DataOwner'                => edgenet()->settings->get_api( 'data_owner' ),
 				'Archived'                 => false,
@@ -118,12 +122,19 @@ class Importer {
 				'Recipients'               => [ edgenet()->settings->get_api( 'recipient' ) ],
 				'SubscriptionStatusFilter' => 'All',
 			] );
+
+			$product_ids = array_slice( $product_ids, 0, 25 );
 		}
+
+		edgenet()->debug->notice( __( sprintf( 'Importing %d products.', count( $product_ids ) ), 'edgenet' ) );
+		edgenet()->debug->info( __( 'Product IDs to be imported:', 'edgenet' ), $product_ids );
 
 		// Defer term counting while doing a batch import.
 		wp_defer_term_counting( true );
 
-		foreach ( $product_ids as $product_id ) {
+		foreach ( $product_ids as $key => $product_id ) {
+
+			edgenet()->debug->notice( __( sprintf( 'Importing Product %d of %d: %s', $key + 1, count( $product_ids ), $product_id ), 'edgenet' ) );
 
 			// Reset flag to block consecutive imports from occuring. Expires in 30 seconds.
 			set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS / 2 );
@@ -164,11 +175,15 @@ class Importer {
 
 		// Bail early if we're unable to get the Product record.
 		if ( is_wp_error( $product ) ) {
+			edgenet()->debug->warning( __( 'Import failed. Unable to get Product record from Edgenet.', 'edgenet' ) );
+
 			return $product;
 		}
 
 		// Bail if product isn't verified.
 		if ( ! $product->is_verified ) {
+			edgenet()->debug->warning( __( 'Import failed. Product not verified.', 'edgenet' ) );
+
 			return new \WP_Error(
 				'edgenet-import-product-not-verified',
 				__( 'Product is not verified, skipping.', 'edgenet' ),

@@ -118,7 +118,7 @@ class API_Adapter {
 		$response = $this->api->call( $endpoint, $method, $headers, $data );
 
 		// If it fails, drop into the loop to try again until success or self::MAX_TRIES.
-		while ( is_wp_error( $response ) && ++ $this->tries < self::MAX_TRIES ) {
+		while ( is_wp_error( $response ) && 'edgenet-error-401' === $response->get_error_code() && ++ $this->tries < self::MAX_TRIES ) {
 
 			// Get token.
 			$response = $this->auth();

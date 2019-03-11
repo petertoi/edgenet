@@ -23,6 +23,8 @@ class API {
 	const METHOD_POST = 'POST';
 	const METHOD_HEAD = 'HEAD';
 
+	const TIMEOUT = 10;
+
 	const HTTP_VERSION_1_1 = '1.1';
 
 	const CONTENT_TYPE_JSON = 'application/json';
@@ -53,6 +55,7 @@ class API {
 		];
 
 		$args = [
+			'timeout'     => self::TIMEOUT,
 			'method'      => $method,
 			'httpversion' => self::HTTP_VERSION_1_1,
 			'headers'     => wp_parse_args( $headers, $default_headers ),
@@ -72,6 +75,12 @@ class API {
 				esc_html( wp_remote_retrieve_response_message( $raw_response ) ),
 				$raw_response
 			);
+
+			edgenet()->debug->warning( __( 'API Error', 'edgenet' ), [
+				'url'     => $url,
+				'response_code'    => wp_remote_retrieve_response_code( $raw_response ),
+				'response_message' => esc_html( wp_remote_retrieve_response_message( $raw_response ) ),
+			] );
 		} else {
 			$response = $raw_response;
 		}
