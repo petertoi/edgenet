@@ -56,7 +56,7 @@ class Debug {
 	 *
 	 * @var int
 	 */
-	public $indent = 0;
+	protected $indent = 0;
 
 	/**
 	 * Tracks if the log file has been written to yet.
@@ -105,7 +105,7 @@ class Debug {
 	 *
 	 * @return bool True on success.
 	 */
-	private function print_log( $msg, $data = null ) {
+	protected function print_log( $msg, $data = null ) {
 		if ( ! $this->enabled ) {
 			return false;
 		}
@@ -121,7 +121,7 @@ class Debug {
 			$this->print_log( str_repeat( '*', 32 ) );
 		}
 
-		$msg = date( 'H:i:s T: ' ) . $msg . PHP_EOL;
+		$msg = date( 'H:i:s T: ' ) . str_repeat( '  ', $this->indent ) . $msg . PHP_EOL;
 
 		$status = (bool) fputs( $fp, $msg );
 
@@ -196,6 +196,22 @@ class Debug {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Increase log indent level
+	 */
+	public function indent() {
+		$this->indent ++;
+	}
+
+	/**
+	 * Decrease log indent level
+	 */
+	public function outdent() {
+		if ( $this->indent > 0 ) {
+			$this->indent --;
+		}
 	}
 
 }

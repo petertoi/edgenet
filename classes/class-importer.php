@@ -15,7 +15,6 @@ use Edgenet\Post_Types\Document;
 use Edgenet\Taxonomies\Brand;
 use Edgenet\Taxonomies\Doc_Type;
 use Edgenet\Taxonomies\Edgenet_Cat;
-use Edgenet\Taxonomies\Fits_Stove_Type;
 
 /**
  * Class Importer
@@ -122,8 +121,6 @@ class Importer {
 				'Recipients'               => [ edgenet()->settings->get_api( 'recipient' ) ],
 				'SubscriptionStatusFilter' => 'All',
 			] );
-
-			$product_ids = array_slice( $product_ids, 0, 25 );
 		}
 
 		edgenet()->debug->notice( __( sprintf( 'Importing %d products.', count( $product_ids ) ), 'edgenet' ) );
@@ -136,10 +133,25 @@ class Importer {
 
 			edgenet()->debug->notice( __( sprintf( 'Importing Product %d of %d: %s', $key + 1, count( $product_ids ), $product_id ), 'edgenet' ) );
 
+			edgenet()->debug->indent();
+
 			// Reset flag to block consecutive imports from occuring. Expires in 30 seconds.
 			set_transient( self::META_IMPORT_MUTEX, true, MINUTE_IN_SECONDS / 2 );
 
-			$status[] = $this->import_product( $product_id, $force_update );
+			$post_id = $this->import_product( $product_id, $force_update );
+
+			if ( is_wp_error( $post_id ) ) {
+				edgenet()->debug->warning( __( 'Import failed:', 'edgenet' ), [
+					$post_id->get_error_code(),
+					$post_id->get_error_message(),
+				] );
+			} else {
+				edgenet()->debug->notice( __( sprintf( 'Imported Product %d of %d successfully: %d', $key + 1, count( $product_ids ), $post_id ), 'edgenet' ) );
+			}
+
+			edgenet()->debug->outdent();
+
+			$status[] = $post_id;
 
 		}
 
@@ -173,17 +185,13 @@ class Importer {
 		// Get the full Product record from Edgenet.
 		$product = $this->get_product( $product_id );
 
-		// Bail early if we're unable to get the Product record.
+		// Bail early if we're unable to get the Product record .
 		if ( is_wp_error( $product ) ) {
-			edgenet()->debug->warning( __( 'Import failed. Unable to get Product record from Edgenet.', 'edgenet' ) );
-
 			return $product;
 		}
 
 		// Bail if product isn't verified.
 		if ( ! $product->is_verified ) {
-			edgenet()->debug->warning( __( 'Import failed. Product not verified.', 'edgenet' ) );
-
 			return new \WP_Error(
 				'edgenet-import-product-not-verified',
 				__( 'Product is not verified, skipping.', 'edgenet' ),
@@ -207,14 +215,27 @@ class Importer {
 			// Product exists! Setup post data.
 			$query->the_post();
 
+			edgenet()->debug->notice( __( sprintf( 'Attempting to update existing product: %d', $post->ID ), 'edgenet' ) );
+
 			$last_verified_meta      = get_post_meta( $post->ID, '_last_verified_date_time', true );
 			$last_verified_date_time = new \DateTime( $last_verified_meta );
 
 			$import_last_verified_date_time = new \DateTime( $product->last_verified_date_time );
 
+			if ( $force_update ) {
+				edgenet()->debug->notice( __( 'Force update flag enabled.', 'edgenet' ) );
+			}
+			if ( $import_last_verified_date_time > $last_verified_date_time ) {
+				edgenet()->debug->notice( __( sprintf( 'Last verified time: %s [local] < [edgenet] %s', $last_verified_date_time->format( 'Y-m-d H:i:s' ), $import_last_verified_date_time->format( 'Y-m-d H:i:s' ) ), 'edgenet' ) );
+			} else {
+				edgenet()->debug->notice( __( sprintf( 'Last verified time: %s [local] >= [edgenet] %s', $last_verified_date_time->format( 'Y-m-d H:i:s' ), $import_last_verified_date_time->format( 'Y-m-d H:i:s' ) ), 'edgenet' ) );
+			}
+
 			// Does this product need to be updated? Check verified dates, or force_update.
 			// TODO: $force_update should update the last verified version of the product, not the latest version (that might be unverified).
 			if ( $import_last_verified_date_time > $last_verified_date_time || $force_update ) {
+
+				edgenet()->debug->notice( __( 'Updating...', 'edgenet' ) );
 				// Update, setup postarr args.
 				$postarr       = $this->get_post_postarr( $product );
 				$postarr['ID'] = $post->ID;
@@ -239,11 +260,15 @@ class Importer {
 
 				// TODO: What about old meta_input?
 			} else {
+				edgenet()->debug->notice( __( 'Skipped update.', 'edgenet' ) );
 				// No update, set reference to post for assets, files, and taxonomy calls yet to come.
 				$update_skipped = true;
 				$post_id        = $post->ID;
 			}
 		} else {
+
+			edgenet()->debug->notice( __( 'Creating a new product.', 'edgenet' ) );
+
 			// New post, setup postarr args.
 			$postarr = $this->get_post_postarr( $product );
 
@@ -264,6 +289,10 @@ class Importer {
 			$primary_image_id = $product->get_asset_value( edgenet()->settings->get_field_map( '_primary_image' ) );
 
 			if ( $primary_image_id ) {
+				edgenet()->debug->notice( __( sprintf( 'Setting primary image: %s', $primary_image_id ), 'edgenet' ) );
+
+				edgenet()->debug->indent();
+
 				$primary_image_attribute = edgenet()->settings->requirement_set->get_attribute_by_id( edgenet()->settings->get_field_map( '_primary_image' ) );
 				$attachment_id           = $this->sideload_attachment(
 					$this->generate_edgenet_image_url( $primary_image_id, 'jpg' ),
@@ -277,35 +306,70 @@ class Importer {
 				);
 
 				if ( ! is_wp_error( $attachment_id ) ) {
+					edgenet()->debug->notice( __( sprintf( 'Primary image set: %d', $attachment_id ), 'edgenet' ) );
 					update_post_meta( $post_id, '_thumbnail_id', $attachment_id );
+				} else {
+					edgenet()->debug->warning( __( 'Primary image error.', 'edgenet' ), $attachment_id );
 				}
 
+				edgenet()->debug->outdent();
 				unset( $attachment_id );
 			}
 
 			// Sideload Other Images.
 			// TODO: Should we pass $force_update into these functions?
 			$digital_assets_group_id = edgenet()->settings->get_field_map( '_digital_assets' );
-			$attachment_ids          = $this->update_digital_assets( $digital_assets_group_id, $product, $post_id );
+
+			edgenet()->debug->notice( __( sprintf( 'Sideloading digital image assets group: %s', $digital_assets_group_id ), 'edgenet' ) );
+			edgenet()->debug->indent();
+
+			$attachment_ids = $this->update_digital_assets( $digital_assets_group_id, $product, $post_id );
+
+			edgenet()->debug->notice( __( sprintf( 'Attachment IDs: %s', implode( ', ', $attachment_ids ) ), 'edgenet' ) );
+			edgenet()->debug->outdent();
 
 			// Sideload Documents.
 			// TODO: Should we pass $force_update into these functions?
 			$document_group_id = edgenet()->settings->get_field_map( '_documents' );
-			$document_ids      = $this->update_documents( $document_group_id, $product, $post_id );
+
+			edgenet()->debug->notice( __( sprintf( 'Sideloading document group: %s', $document_group_id ), 'edgenet' ) );
+			edgenet()->debug->indent();
+
+			$document_ids = $this->update_documents( $document_group_id, $product, $post_id );
+
+			edgenet()->debug->notice( __( sprintf( 'Document IDs: %s', implode( ', ', $document_ids ) ), 'edgenet' ) );
+			edgenet()->debug->outdent();
 
 			// Set Product Categories.
 			// TODO: Should we pass $force_update into these functions?
 			$taxonomy_node_ids = $product->taxonomy_node_ids;
+
+			edgenet()->debug->notice( __( 'Setting Edgenet categories.', 'edgenet' ) );
+			edgenet()->debug->indent();
+
 			$this->update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id );
+
+			edgenet()->debug->outdent();
 
 			// Set Brand.
 			// TODO: Should we pass $force_update into these functions?
+			edgenet()->debug->notice( __( 'Setting brand.', 'edgenet' ) );
+			edgenet()->debug->indent();
+
 			$this->update_edgenet_brand( $product, $post_id );
+
+			edgenet()->debug->outdent();
 
 			/**
 			 * Allow developers to include additional functionality required for their theme.
 			 */
+			edgenet()->debug->notice( __( 'Running additional hooks.', 'edgenet' ) );
+			edgenet()->debug->indent();
+
 			do_action( 'edgenet_import_product_after_update', $product, $post_id );
+
+			edgenet()->debug->outdent();
+
 		}
 
 		return $post_id;
@@ -827,7 +891,12 @@ class Importer {
 
 				if ( ! empty( $leaf_term ) ) {
 					$leaf_term = array_shift( $leaf_term );
-					wp_set_object_terms( $post_id, $leaf_term->term_id, Edgenet_Cat::TAXONOMY );
+					edgenet()->debug->notice( __( sprintf( 'Setting Edgenet term: %s', $leaf_term->name ), 'edgenet' ) );
+					$status = wp_set_object_terms( $post_id, $leaf_term->term_id, Edgenet_Cat::TAXONOMY );
+
+					if ( is_wp_error( $status ) ) {
+						edgenet()->debug->error( __( 'Error setting Edgenet term.', 'edgenet' ), $status );
+					}
 				}
 			}
 		}
@@ -847,10 +916,15 @@ class Importer {
 
 		if ( ! is_wp_error( $brand ) && ! empty( $brand ) ) {
 
+			edgenet()->debug->notice( __( sprintf( 'Setting Brand term: %s', $brand ), 'edgenet' ) );
 			// add the term to the post.
-			$done = wp_set_object_terms( $post_id, $brand, Brand::TAXONOMY );
+			$status = wp_set_object_terms( $post_id, $brand, Brand::TAXONOMY );
 
-			return $done;
+			if ( is_wp_error( $status ) ) {
+				edgenet()->debug->error( __( 'Error setting Brand term.', 'edgenet' ), $status );
+			}
+
+			return $status;
 		}
 
 		return false;
