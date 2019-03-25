@@ -12,6 +12,7 @@ use Edgenet\Item\Product;
 use Edgenet\Item\Requirement_Set;
 use Edgenet\Item\Attribute;
 use Edgenet\Item\Taxonomy_Node;
+use Edgenet\Item\Verified_Content;
 
 /**
  * Class API_Adapter
@@ -337,7 +338,8 @@ class API_Adapter {
 		} else {
 			$body          = wp_remote_retrieve_body( $response );
 			$product_array = json_decode( $body, true );
-			if ( isset( $product_array['Type'] ) && Product::TYPE === $product_array['Type'] ) {
+
+			if ( isset( $product_array['Type'] ) && ( Product::TYPE === $product_array['Type'] || Verified_Content::TYPE === $product_array['Type'] ) ) {
 				$product = new Product( $product_array );
 			} else {
 				$product = new \WP_Error(

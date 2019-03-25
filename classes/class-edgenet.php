@@ -11,17 +11,16 @@ use Edgenet\Post_Types\Document;
 use Edgenet\Taxonomies\Brand;
 use Edgenet\Taxonomies\Doc_Type;
 use Edgenet\Taxonomies\Edgenet_Cat;
-use Edgenet\Taxonomies\Fits_Stove_Type;
 
 /**
- * Class WP_Vote
+ * Class Edgenet
  *
- * @package WP_Vote
+ * @package Edgenet
  */
 class Edgenet {
 	use Singleton;
 
-	const VERSION = '1.0.1';
+	const VERSION = '1.0.2';
 
 	const ACTIVE_CRON_KEY = 'edgenet_cron_active';
 

@@ -32,17 +32,28 @@ class Product {
 	public $audit_info;
 
 	public function __construct( $params ) {
-		$this->id       = $params['id'];
-		$this->archived = $params['Archived'];
-		if ( isset( $params['ArchivedMetadata'] ) ) {
-			$this->archived_metadata = $params['ArchivedMetadata'];
+		if ( Verified_Content::TYPE === $params['Type'] ) {
+			$verified_content        = new Verified_Content( $params, self::TYPE );
+			$product_params          = $verified_content->enclosed_item;
+			$last_verified_date_time = $verified_content->verification_date;
+			$is_verified             = true;
+		} else {
+			$product_params          = $params;
+			$last_verified_date_time = '';
+			$is_verified             = false;
 		}
-		$this->components              = $params['Components'];
-		$this->record_date             = $params['RecordDate'];
-		$this->taxonomy_node_ids       = $params['TaxonomyNodeIds'];
-		$this->last_verified_date_time = $params['LastVerifiedDateTime'];
-		$this->is_verified             = $params['IsVerified'];
-		$this->audit_info              = $params['AuditInfo'];
+
+		$this->id       = $product_params['id'];
+		$this->archived = $product_params['Archived'];
+		if ( isset( $params['ArchivedMetadata'] ) ) {
+			$this->archived_metadata = $product_params['ArchivedMetadata'];
+		}
+		$this->components              = $product_params['Components'];
+		$this->record_date             = $product_params['RecordDate'];
+		$this->taxonomy_node_ids       = $product_params['TaxonomyNodeIds'];
+		$this->audit_info              = $product_params['AuditInfo'];
+		$this->last_verified_date_time = $last_verified_date_time;
+		$this->is_verified             = $is_verified;
 	}
 
 	/**
@@ -82,8 +93,8 @@ class Product {
 	 * Get set of Attribute IDs and Values from Product.
 	 *
 	 * @param array  $attributes Array of Attributes.
-	 * @param string $default       Fallback value if attribute not found.
-	 * @param string $lang          Language.
+	 * @param string $default    Fallback value if attribute not found.
+	 * @param string $lang       Language.
 	 *
 	 * @return array
 	 */
