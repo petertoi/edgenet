@@ -202,6 +202,7 @@ class Importer {
 		// Setup WP_Query args to check if this product already exists.
 		// @see https://vip.wordpress.com/documentation/querying-on-meta_value/ for info on this query.
 		$args = [
+			'post_status'  => 'any',
 			'meta_key'     => '_edgenet_id_' . $product->id, /* phpcs:ignore */
 			'meta_compare' => 'EXISTS',
 			'post_type'    => 'product',
@@ -1116,9 +1117,9 @@ class Importer {
 	 * Set specified taxonomy term to the incoming post object. If
 	 * the term doesn't already exist in the database, it will be created.
 	 *
-	 * @param    int    $post_id  The post to which we're adding the taxonomy term.
-	 * @param    string $value    The name of the taxonomy term.
-	 * @param    string $taxonomy The name of the taxonomy.
+	 * @param int    $post_id  The post to which we're adding the taxonomy term.
+	 * @param string $value    The name of the taxonomy term.
+	 * @param string $taxonomy The name of the taxonomy.
 	 *
 	 * @access   private
 	 * @since    1.0.0
