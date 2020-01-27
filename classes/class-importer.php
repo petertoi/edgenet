@@ -461,6 +461,113 @@ class Importer {
 	}
 
 	/**
+	 * Sync all Edgenet Data with Custom Fields and Product Attributes
+	 */
+	public function sync_all_custom_fields_attributes() {
+
+		// Get array of all product IDs
+//		$args = [
+//			'post_type'      => 'product',
+//			'post_status'    => 'all',
+//			'posts_per_page' => - 1,
+//			'fields'         => 'ids',
+//		];
+//
+//		$product_ids = new \WP_Query( $args );
+//
+//		foreach ( $product_ids as $product_id ) {
+//		$this->sync_product_custom_fields_attribute( $product_id );
+		$this->sync_product_custom_fields_attribute( 13709 );
+//		}
+	}
+
+	public function sync_product_custom_fields_attribute( $product_id ) {
+		$product = wc_get_product( $product_id );
+		// Features.
+		$features = get_post_meta( $product_id, '_features', true );
+
+		delete_field( 'ussc_features', $product_id );
+
+		$features = array_map( function ( $feature ) {
+			return [
+				'feature' => $feature['value'],
+			];
+		}, $features );
+
+		update_field( 'ussc_features', $features, $product_id );
+
+		// Others.
+		$others = get_post_meta( $product_id, '_other', true );
+
+		delete_field( 'ussc_other', $product_id );
+
+		$others = array_map( function ( $other ) {
+			return [
+				'label' => $other['attribute']->description,
+				'value' => $other['value'],
+			];
+		}, $others );
+
+		update_field( 'ussc_other', $others, $product_id );
+
+		// Regulatory.
+		$regulatory = get_post_meta( $product_id, '_regulatory', true );
+
+		delete_field( 'ussc_regulatory', $product_id );
+
+		$regulatory = array_map( function ( $regulation ) {
+			return [
+				'label' => $regulation['attribute']->description,
+				'value' => $regulation['value'],
+			];
+		}, $regulatory );
+
+		update_field( 'ussc_regulatory', $regulatory, $product_id );
+
+		// Dimensions.
+		$dimensions = get_post_meta( $product_id, '_dimensions', true );
+
+		delete_field( 'ussc_dimensions', $product_id );
+
+		$dimensions = array_map( function ( $dimension ) {
+			return [
+				'label' => $dimension['attribute']->description,
+				'value' => $dimension['value'],
+			];
+		}, $dimensions );
+
+		// update field.
+		update_field( 'ussc_dimensions', $dimensions, $product_id );
+
+		$specs    = get_post_meta( $product_id, '_category_attributes', true );
+		$att_meta = [];
+		foreach ( $specs as $spec ) {
+			$label   = $spec['attribute']->description;
+			$pa_args = [
+				'name' => $label,
+				'slug' => substr( wc_sanitize_taxonomy_name( $label ), 0, 27 ),
+				'type' => 'text',
+			];
+
+			if ( ! taxonomy_exists( wc_attribute_taxonomy_name( $pa_args['slug'] ) ) ) {
+				wc_create_attribute( $pa_args );
+			}
+			if ( ! term_exists( $spec['value'], wc_attribute_taxonomy_name( $pa_args['slug'] ) ) ) {
+				wp_set_object_terms( $product_id, $spec['value'], wc_attribute_taxonomy_name( $pa_args['slug'] ) );
+			}
+
+			$att_meta[] = [
+				'name'         => wc_attribute_taxonomy_name( $pa_args['slug'] ),
+				'value'        => $spec['value'],
+				'is_visible'   => 1,
+				'is_variation' => 1,
+				'is_taxonomy'  => 1,
+			];
+		}
+		update_post_meta( $product_id, '_product_attributes', $att_meta );
+	}
+
+	/**
 	 * Generate meta_input array for insert/update post.
 	 *
 	 * @param Product $product The Product.
@@ -494,7 +601,7 @@ class Importer {
 		$features_group_id = edgenet()->settings->get_field_map( '_features' );
 		if ( ! empty( $features_group_id ) ) {
 			$features_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $features_group_id );
-
+			// TODO: Create custom field entries.
 			$meta_input['_features'] = $product->get_attributes_values( $features_attributes );
 		} else {
 			$meta_input['_features'] = [];
@@ -514,7 +621,7 @@ class Importer {
 		$other_group_id = edgenet()->settings->get_field_map( '_other' );
 		if ( ! empty( $other_group_id ) ) {
 			$other_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $other_group_id );
-
+			// TODO: Create custom field entries.
 			$meta_input['_other'] = $product->get_attributes_values( $other_attributes );
 		} else {
 			$meta_input['_other'] = [];
@@ -524,7 +631,7 @@ class Importer {
 		$regulatory_group_id = edgenet()->settings->get_field_map( '_regulatory' );
 		if ( ! empty( $regulatory_group_id ) ) {
 			$regulatory_attributes = edgenet()->settings->requirement_set->get_attributes_by_group_id( $regulatory_group_id );
-
+			// TODO: Create custom field entries.
 			$meta_input['_regulatory'] = $product->get_attributes_values( $regulatory_attributes );
 		} else {
 			$meta_input['_regulatory'] = [];

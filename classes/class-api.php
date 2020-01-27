@@ -59,6 +59,7 @@ class API {
 			'method'      => $method,
 			'httpversion' => self::HTTP_VERSION_1_1,
 			'headers'     => wp_parse_args( $headers, $default_headers ),
+			'sslverify'   => false,
 		];
 
 		if ( ! empty( $data ) ) {
@@ -77,7 +78,7 @@ class API {
 			);
 
 			edgenet()->debug->warning( __( 'API Error', 'edgenet' ), [
-				'url'     => $url,
+				'url'              => $url,
 				'response_code'    => wp_remote_retrieve_response_code( $raw_response ),
 				'response_message' => esc_html( wp_remote_retrieve_response_message( $raw_response ) ),
 			] );

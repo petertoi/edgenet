@@ -53,6 +53,12 @@ use Edgenet\Template;
 				__( 'Map Categories', 'edgenet' ),
 				get_submit_button( __( 'Map Categories', 'edgenet' ), 'secondary', 'edgenet_action[map_categories]' )
 			);
+
+
+			echo Template::render_admin_table_row(
+				__( 'Sync Custom Fields/Attributes', 'edgenet' ),
+				get_submit_button( __( 'Sync Custom Fields/Attributes', 'edgenet' ), 'secondary', 'edgenet_action[sync_custom_fields_attributes]' )
+			);
 			?>
 
 		<?php endif; ?>

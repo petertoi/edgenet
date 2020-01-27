@@ -131,6 +131,10 @@ class Admin {
 				edgenet()->importer->sync_edgenet_cat_to_product_cat();
 
 				break;
+			case 'sync_custom_fields_attributes':
+				edgenet()->importer->sync_all_custom_fields_attributes();
+
+				break;
 			case 'delete_images':
 				$this->delete_edgenet_content( 'images' );
 
