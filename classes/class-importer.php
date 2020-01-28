@@ -466,19 +466,19 @@ class Importer {
 	public function sync_all_custom_fields_attributes() {
 
 		// Get array of all product IDs
-//		$args = [
-//			'post_type'      => 'product',
-//			'post_status'    => 'all',
-//			'posts_per_page' => - 1,
-//			'fields'         => 'ids',
-//		];
-//
-//		$product_ids = new \WP_Query( $args );
-//
-//		foreach ( $product_ids as $product_id ) {
-//		$this->sync_product_custom_fields_attribute( $product_id );
-		$this->sync_product_custom_fields_attribute( 13709 );
-//		}
+		$args = [
+			'post_type'      => 'product',
+			'post_status'    => 'all',
+			'posts_per_page' => - 1,
+			'fields'         => 'ids',
+		];
+
+		$product_ids = new \WP_Query( $args );
+
+		foreach ( $product_ids as $product_id ) {
+			$this->sync_product_custom_fields_attribute( $product_id );
+		}
+//		$this->sync_product_custom_fields_attribute( 13709 );
 	}
 
 	public function sync_product_custom_fields_attribute( $product_id ) {
