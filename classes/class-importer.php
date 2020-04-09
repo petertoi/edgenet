@@ -475,16 +475,18 @@ class Importer {
 
 		$product_ids = new \WP_Query( $args );
 
-		foreach ( $product_ids as $product_id ) {
-			$this->sync_product_custom_fields_attribute( $product_id );
+		foreach ( $product_ids->posts as $product_id ) {
+			$this->sync_product_custom_fields_attributes( $product_id );
 		}
-//		$this->sync_product_custom_fields_attribute( 13709 );
+
 	}
 
-	public function sync_product_custom_fields_attribute( $product_id ) {
-		$product = wc_get_product( $product_id );
+	public function sync_product_custom_fields_attributes( $product_id ) {
 		// Features.
 		$features = get_post_meta( $product_id, '_features', true );
+		if ( ! is_array( $features ) ) {
+			$features = [];
+		}
 
 		delete_field( 'ussc_features', $product_id );
 
@@ -497,7 +499,10 @@ class Importer {
 		update_field( 'ussc_features', $features, $product_id );
 
 		// Others.
-		$others = get_post_meta( $product_id, '_other', true );
+		$others = get_post_meta( $product_id, '_other', true ) ?? [];
+		if ( ! is_array( $others ) ) {
+			$others = [];
+		}
 
 		delete_field( 'ussc_other', $product_id );
 
@@ -511,7 +516,10 @@ class Importer {
 		update_field( 'ussc_other', $others, $product_id );
 
 		// Regulatory.
-		$regulatory = get_post_meta( $product_id, '_regulatory', true );
+		$regulatory = get_post_meta( $product_id, '_regulatory', true ) ?? [];
+		if ( ! is_array( $regulatory ) ) {
+			$regulatory = [];
+		}
 
 		delete_field( 'ussc_regulatory', $product_id );
 
@@ -525,7 +533,10 @@ class Importer {
 		update_field( 'ussc_regulatory', $regulatory, $product_id );
 
 		// Dimensions.
-		$dimensions = get_post_meta( $product_id, '_dimensions', true );
+		$dimensions = get_post_meta( $product_id, '_dimensions', true ) ?? [];
+		if ( ! is_array( $dimensions ) ) {
+			$dimensions = [];
+		}
 
 		delete_field( 'ussc_dimensions', $product_id );
 
@@ -539,25 +550,32 @@ class Importer {
 		// update field.
 		update_field( 'ussc_dimensions', $dimensions, $product_id );
 
-		$specs    = get_post_meta( $product_id, '_category_attributes', true );
+		$specs = get_post_meta( $product_id, '_category_attributes', true );
+		if ( ! is_array( $specs ) ) {
+			$specs = [];
+		}
+
 		$att_meta = [];
 		foreach ( $specs as $spec ) {
 			$label   = $spec['attribute']->description;
 			$pa_args = [
 				'name' => $label,
-				'slug' => substr( wc_sanitize_taxonomy_name( $label ), 0, 27 ),
+				'slug' => substr( sanitize_title_with_dashes( preg_replace( '/[^A-Za-z0-9\-_ ]/', '', $label ) ), 0, 27 ),
 				'type' => 'text',
 			];
 
-			if ( ! taxonomy_exists( wc_attribute_taxonomy_name( $pa_args['slug'] ) ) ) {
+			$taxonomy = wc_attribute_taxonomy_name( $pa_args['slug'] );
+
+			if ( ! wc_attribute_taxonomy_id_by_name( $taxonomy ) ) {
 				wc_create_attribute( $pa_args );
 			}
-			if ( ! term_exists( $spec['value'], wc_attribute_taxonomy_name( $pa_args['slug'] ) ) ) {
-				wp_set_object_terms( $product_id, $spec['value'], wc_attribute_taxonomy_name( $pa_args['slug'] ) );
+
+			if ( ! has_term( $spec['value'], $taxonomy, $product_id ) ) {
+				wp_set_object_terms( $product_id, $spec['value'], $taxonomy );
 			}
 
 			$att_meta[] = [
-				'name'         => wc_attribute_taxonomy_name( $pa_args['slug'] ),
+				'name'         => $taxonomy,
 				'value'        => $spec['value'],
 				'is_visible'   => 1,
 				'is_variation' => 1,
