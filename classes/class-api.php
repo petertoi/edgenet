@@ -29,7 +29,7 @@ class API {
 
 	const CONTENT_TYPE_JSON = 'application/json';
 
-	const BASE_URL = 'https://api.edgenet.com:443/';
+	const BASE_URL = 'https://api.syndigo.com:443/';
 
 	/**
 	 * API constructor.
