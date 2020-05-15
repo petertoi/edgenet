@@ -43,7 +43,7 @@ class CRON {
 		if ( $this->is_cron_enabled() ) {
 			if ( false === $next_scheduled ) {
 				$recurrence = $this->validate_recurrence( self::RECURRENCE );
-				wp_schedule_event( current_time( 'timestamp' ), $recurrence, 'edgenet_scheduled_product_sync' );
+				 wp_schedule_event( current_time( 'timestamp' ), $recurrence, 'edgenet_scheduled_product_sync' );
 			}
 		} else {
 			if ( false !== $next_scheduled ) {
@@ -111,11 +111,14 @@ class CRON {
 	 * @return bool
 	 */
 	private function is_cron_enabled() {
-		$enabled = (
-			isset( edgenet()->settings->import['is_cron_enabled'] )
-			&& 'on' === edgenet()->settings->import['is_cron_enabled']
-		);
+		// CRON is permanently disabled
+		return false;
 
-		return $enabled;
+//		$enabled = (
+//			isset( edgenet()->settings->import['is_cron_enabled'] )
+//			&& 'on' === edgenet()->settings->import['is_cron_enabled']
+//		);
+//
+//		return $enabled;
 	}
 }

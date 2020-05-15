@@ -39,7 +39,7 @@ use Edgenet\Template;
 			isset( edgenet()->settings->import['is_cron_enabled'] )
 				? edgenet()->settings->import['is_cron_enabled']
 				: 'off',
-			[]
+			['readonly' =>'readonly', 'disabled' => 'disabled']
 		)
 	);
 

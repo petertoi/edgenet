@@ -504,6 +504,14 @@ class Importer {
 	 */
 	public function sync_product_custom_fields_attributes( $product_id ) {
 		global $sync_taxonomies;
+
+		$model_no = get_post_meta($product_id, '_model_no', true );
+		if( !empty( $model_no) ) {
+			update_field('ussc_model_no', $model_no, $product_id);
+		}
+
+		return true;
+
 		// Features.
 		$features = get_post_meta( $product_id, '_features', true );
 		if ( ! is_array( $features ) ) {
