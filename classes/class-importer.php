@@ -510,8 +510,6 @@ class Importer {
 			update_field('ussc_model_no', $model_no, $product_id);
 		}
 
-		return true;
-
 		// Features.
 		$features = get_post_meta( $product_id, '_features', true );
 		if ( ! is_array( $features ) ) {
