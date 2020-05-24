@@ -38,7 +38,7 @@ class Importer {
 	/**
 	 * Update Edgenet Distribution Requirement Set configuration.
 	 *
-	 * @param   string  $requirement_set_id  The requirement set ID.
+	 * @param string $requirement_set_id The requirement set ID.
 	 *
 	 * @return Item\Requirement_Set|\WP_Error
 	 */
@@ -76,8 +76,8 @@ class Importer {
 	/**
 	 * Import a set of Products
 	 *
-	 * @param   array  $product_ids   Specific Product ID(s) to import. Leave null for all products.
-	 * @param   bool   $force_update  Force update products regardless of verified date.
+	 * @param array $product_ids Specific Product ID(s) to import. Leave null for all products.
+	 * @param bool $force_update Force update products regardless of verified date.
 	 *
 	 * @return array|\WP_Error Array of Product IDs or WP_Error if another import already running.
 	 */
@@ -169,8 +169,8 @@ class Importer {
 	/**
 	 * Import a single Product
 	 *
-	 * @param   int   $product_id    The product ID to import.
-	 * @param   bool  $force_update  Whether to force import/update data regardless of verified_date.
+	 * @param int $product_id The product ID to import.
+	 * @param bool $force_update Whether to force import/update data regardless of verified_date.
 	 *
 	 * @return int|\WP_Error The Post ID on success or \WP_Error if failure.
 	 */
@@ -379,7 +379,7 @@ class Importer {
 	/**
 	 * Sync Edgenet Terms to Product Categories
 	 *
-	 * @param   int[]  $term_ids  An array of Term IDs.
+	 * @param int[] $term_ids An array of Term IDs.
 	 *
 	 * @return array
 	 */
@@ -497,6 +497,38 @@ class Importer {
 		edgenet()->debug->notice( "\n" );
 	}
 
+	public function sync_all_document_product_relationships() {
+		edgenet()->debug->notice( "\n" );
+		edgenet()->debug->notice( "\n" );
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+		edgenet()->debug->notice( __( 'Start SYNC_ALL_DOCUMENT_PRODUCT_RELATIONSHIPS', 'edgenet' ) );
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+
+		// Get array of all product IDs
+		$args = [
+			'post_type'      => 'product',
+			'post_status'    => 'all',
+			'posts_per_page' => - 1,
+			'fields'         => 'ids',
+		];
+
+		$product_ids = new \WP_Query( $args );
+
+		edgenet()->debug->notice( __( sprintf( 'Syncing %s products', $product_ids->post_count ), 'edgenet' ) );
+
+		foreach ( $product_ids->posts as $product_id ) {
+			edgenet()->debug->notice( __( sprintf( 'Starting sync for Product ID: %s', $product_id ), 'edgenet' ) );
+			$this->sync_document_product_relationship( $product_id );
+			edgenet()->debug->notice( __( sprintf( 'Stopping sync for Product ID: %s', $product_id ), 'edgenet' ) );
+		}
+
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+		edgenet()->debug->notice( __( 'End SYNC_ALL_DOCUMENT_PRODUCT_RELATIONSHIPS', 'edgenet' ) );
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+		edgenet()->debug->notice( "\n" );
+		edgenet()->debug->notice( "\n" );
+	}
+
 	/**
 	 * Sync single product Edgenet Data with Custom Fields and Product Attributes
 	 *
@@ -505,9 +537,9 @@ class Importer {
 	public function sync_product_custom_fields_attributes( $product_id ) {
 		global $sync_taxonomies;
 
-		$model_no = get_post_meta($product_id, '_model_no', true );
-		if( !empty( $model_no) ) {
-			update_field('ussc_model_no', $model_no, $product_id);
+		$model_no = get_post_meta( $product_id, '_model_no', true );
+		if ( ! empty( $model_no ) ) {
+			update_field( 'ussc_model_no', $model_no, $product_id );
 		}
 
 		// Features.
@@ -634,10 +666,84 @@ class Importer {
 		update_post_meta( $product_id, '_product_attributes', $att_meta );
 	}
 
+	public function sync_document_product_relationship( $product_id ) {
+		edgenet()->debug->notice( __( sprintf( 'Looking for documents linked to Product ID: %s', $product_id ), 'edgenet' ) );
+		$documents = get_posts( [
+			'post_type'    => Document::POST_TYPE,
+			'meta_key'     => '_product_id_' . $product_id,
+			'meta_compare' => 'EXISTS',
+		] );
+
+		if ( ! $documents ) {
+			edgenet()->debug->notice( __( sprintf( 'No documents found for Product ID: %s', $product_id ), 'edgenet' ) );
+
+			return false;
+		}
+
+		edgenet()->debug->notice( __( sprintf( 'Found %s documents linked to Product ID: %s', count( $documents ), $product_id ), 'edgenet' ) );
+
+		foreach ( $documents as $document ) {
+			// populate ACF
+			$related_products = get_field( 'related_products', $document->ID );
+			if ( ! $related_products ) {
+				$related_products = [];
+			}
+			$related_products[] = $product_id;
+
+			$related_products = array_unique( $related_products );
+
+			update_field( 'related_products', $related_products, $document->ID );
+
+			edgenet()->debug->notice( __( sprintf( 'Updated Document ID: %s with Product ID: %s', $document->ID, $product_id ), 'edgenet' ) );
+		}
+
+		edgenet()->debug->notice( __( sprintf( 'Finished syncing documents for Product ID: %s', $product_id ), 'edgenet' ) );
+	}
+
+
+	public function migrate_edgenet_attachments_to_acf_fields() {
+		edgenet()->debug->notice( "\n" );
+		edgenet()->debug->notice( "\n" );
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+		edgenet()->debug->notice( __( 'Start MIGRATE_EDGENET_ATTACHMENT_TO_ACF_FIELD', 'edgenet' ) );
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+
+		// Get array of all product IDs
+		$args = [
+			'post_type'      => 'document',
+			'post_status'    => 'all',
+			'posts_per_page' => - 1,
+			'fields'         => 'ids',
+		];
+
+		$document_ids = new \WP_Query( $args );
+
+		edgenet()->debug->notice( __( sprintf( 'Syncing %s documents', $document_ids->post_count ), 'edgenet' ) );
+
+		foreach ( $document_ids->posts as $document_id ) {
+			edgenet()->debug->notice( __( sprintf( 'Starting sync for Product ID: %s', $document_id ), 'edgenet' ) );
+			$this->migrate_edgenet_attachment_to_acf_field( $document_id );
+			edgenet()->debug->notice( __( sprintf( 'Stopping sync for Product ID: %s', $document_id ), 'edgenet' ) );
+		}
+
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+		edgenet()->debug->notice( __( 'End MIGRATE_EDGENET_ATTACHMENT_TO_ACF_FIELD', 'edgenet' ) );
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+		edgenet()->debug->notice( "\n" );
+		edgenet()->debug->notice( "\n" );
+	}
+
+	public function migrate_edgenet_attachment_to_acf_field( $document_id ) {
+		$attachment_id = get_post_meta( $document_id, Document::META_ATTACHMENT_ID, true );
+		if ( $attachment_id ) {
+			update_field( 'document', $attachment_id, $document_id );
+		}
+	}
+
 	/**
 	 * Generate meta_input array for insert/update post.
 	 *
-	 * @param   Product  $product  The Product.
+	 * @param Product $product The Product.
 	 *
 	 * @return array Array of meta_input for wp_insert_post or wp_update_post.
 	 */
@@ -710,7 +816,7 @@ class Importer {
 	/**
 	 * Generate postarr args for insert/update post.
 	 *
-	 * @param   Product  $product  The Product.
+	 * @param Product $product The Product.
 	 *
 	 * @return array Array of args for wp_insert_post or wp_update_post.
 	 */
@@ -731,7 +837,7 @@ class Importer {
 	/**
 	 * Get the product IDs based on search parameters.
 	 *
-	 * @param   array  $search  Search parameters.
+	 * @param array $search Search parameters.
 	 *
 	 * @return array|\WP_Error
 	 */
@@ -763,7 +869,7 @@ class Importer {
 	/**
 	 * Get a Product by Product ID.
 	 *
-	 * @param   string  $product_id  The product ID.
+	 * @param string $product_id The product ID.
 	 *
 	 * @return Item\Product|\WP_Error
 	 */
@@ -776,9 +882,9 @@ class Importer {
 	/**
 	 * Generate an Edgenet Image URL from Asset ID
 	 *
-	 * @param   string  $asset_id   Asset ID.
-	 * @param   string  $file_type  Options are [jpg, png].
-	 * @param   int     $size       Define size of square in pixels that the image shall fit within.
+	 * @param string $asset_id Asset ID.
+	 * @param string $file_type Options are [jpg, png].
+	 * @param int $size Define size of square in pixels that the image shall fit within.
 	 *
 	 * @return string The URL of the image on Edgenet.
 	 */
@@ -800,7 +906,7 @@ class Importer {
 	/**
 	 * Generate an Edgenet Document (PDF) URL from Asset ID
 	 *
-	 * @param   string  $asset_id  Asset ID.
+	 * @param string $asset_id Asset ID.
 	 *
 	 * @return string The URL of the Document (PDF) on Edgenet.
 	 */
@@ -823,8 +929,8 @@ class Importer {
 	 *
 	 * @link   http://wordpress.stackexchange.com/a/145349/26350
 	 *
-	 * @param   string  $url              URL of image to import.
-	 * @param   array   $attachment_args  Attachment arguments.
+	 * @param string $url URL of image to import.
+	 * @param array $attachment_args Attachment arguments.
 	 *
 	 * @return int|\WP_Error $attachment_id The ID of the Attachment post or \WP_Error if failure.
 	 */
@@ -935,10 +1041,10 @@ class Importer {
 	/**
 	 * Bulk Sideload Assets by Attribute Group.
 	 *
-	 * @param   string   $attribute_group_id  The Attribute Group ID for Digital Assets.
-	 * @param   Product  $product             The Product.
-	 * @param   int      $post_id             The Post ID.
-	 * @param   string   $file_ext            The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
+	 * @param string $attribute_group_id The Attribute Group ID for Digital Assets.
+	 * @param Product $product The Product.
+	 * @param int $post_id The Post ID.
+	 * @param string $file_ext The attachment extension, leave empty to auto-sense with exif_imagetype (Note: does not work for all file types).
 	 *
 	 * @return int[] Array of Attachment IDs sideloaded and attached to the post.
 	 */
@@ -979,9 +1085,9 @@ class Importer {
 	 * Takes an array of Taxonomy Ids, identifies the Edgenet Term, and proceeds with that one.
 	 * Generates Edgenet Taxonomy Term heirarchy from Taxonomy_Node[] if it doesn't already exist.
 	 *
-	 * @param   string[]  $taxonomy_node_ids  Array of Taxonomy Node Ids.
-	 * @param   Product   $product            The Product.
-	 * @param   int       $post_id            The Product's \WP_Post id.
+	 * @param string[] $taxonomy_node_ids Array of Taxonomy Node Ids.
+	 * @param Product $product The Product.
+	 * @param int $post_id The Product's \WP_Post id.
 	 */
 	private function update_edgenet_taxonomy( $taxonomy_node_ids, $product, $post_id ) {
 		if ( ! empty( $taxonomy_node_ids ) ) {
@@ -1080,8 +1186,8 @@ class Importer {
 	/**
 	 * Assign Edgenet Brand Term to Post
 	 *
-	 * @param   Product  $product  proctuct being imported.
-	 * @param   int      $post_id  The Product's \WP_Post id.
+	 * @param Product $product proctuct being imported.
+	 * @param int $post_id The Product's \WP_Post id.
 	 *
 	 * @return array|int|\WP_Error|bool
 	 */
@@ -1108,9 +1214,9 @@ class Importer {
 	/**
 	 * Update the Product image gallery.
 	 *
-	 * @param   string   $attribute_group_id  The Edgenet Attribute Group ID.
-	 * @param   Product  $product             The Edgenet Product.
-	 * @param   int      $post_id             The WordPress \WP_Post ID of the WooCommerce product.
+	 * @param string $attribute_group_id The Edgenet Attribute Group ID.
+	 * @param Product $product The Edgenet Product.
+	 * @param int $post_id The WordPress \WP_Post ID of the WooCommerce product.
 	 *
 	 * @return int[]
 	 */
@@ -1127,9 +1233,9 @@ class Importer {
 	/**
 	 * Update the Product documents.
 	 *
-	 * @param   string   $attribute_group_id
-	 * @param   Product  $product
-	 * @param   int      $post_id
+	 * @param string $attribute_group_id
+	 * @param Product $product
+	 * @param int $post_id
 	 *
 	 * @return int[]
 	 */
@@ -1221,9 +1327,9 @@ class Importer {
 	/**
 	 * Generate standardized Attachment title for an Asset (Doc or Img) based on the Product and Attribute Description.
 	 *
-	 * @param   Product    $product    The Edgenet Product.
-	 * @param   Attribute  $attribute  The Edgenet Attribute.
-	 * @param   string     $delim      Delimiter between Product identifier and document description.
+	 * @param Product $product The Edgenet Product.
+	 * @param Attribute $attribute The Edgenet Attribute.
+	 * @param string $delim Delimiter between Product identifier and document description.
 	 *
 	 * @return string
 	 */
@@ -1256,9 +1362,9 @@ class Importer {
 	/**
 	 * Generate standardized Attachment filename for an Asset (Doc or Img) based on the Product and Attribute Description.
 	 *
-	 * @param   Product    $product    The Edgenet Product.
-	 * @param   Attribute  $attribute  The Edgenet Attribute.
-	 * @param   string     $delim      Delimeter between Product identifier and document description.
+	 * @param Product $product The Edgenet Product.
+	 * @param Attribute $attribute The Edgenet Attribute.
+	 * @param string $delim Delimeter between Product identifier and document description.
 	 *
 	 * @return string
 	 */
@@ -1291,9 +1397,9 @@ class Importer {
 	 * Set specified taxonomy term to the incoming post object. If
 	 * the term doesn't already exist in the database, it will be created.
 	 *
-	 * @param   int     $post_id   The post to which we're adding the taxonomy term.
-	 * @param   string  $value     The name of the taxonomy term.
-	 * @param   string  $taxonomy  The name of the taxonomy.
+	 * @param int $post_id The post to which we're adding the taxonomy term.
+	 * @param string $value The name of the taxonomy term.
+	 * @param string $taxonomy The name of the taxonomy.
 	 *
 	 * @access   private
 	 * @since    1.0.0
@@ -1315,9 +1421,9 @@ class Importer {
 	/**
 	 * Parse Taxonomy Path for attributes and store attribute-value array in post meta.
 	 *
-	 * @param   array    $taxonomynode_path
-	 * @param   Product  $product
-	 * @param   int      $post_id
+	 * @param array $taxonomynode_path
+	 * @param Product $product
+	 * @param int $post_id
 	 */
 	private function update_edgenet_taxonomy_attributes( $taxonomynode_path, $product, $post_id ) {
 		foreach ( $taxonomynode_path as $taxonomynode ) {
