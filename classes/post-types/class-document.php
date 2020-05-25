@@ -43,9 +43,11 @@ class Document {
 	public function __construct() {
 		add_action( 'init', [ $this, 'register_document_post_type' ] );
 
-		add_action( 'add_meta_boxes', [ $this, 'add_meta_box' ] );
+		// Old Edgenet functionality no longer required now that docs are linked via ACF
+//		add_action( 'add_meta_boxes', [ $this, 'add_meta_box' ] );
 
-		add_action( 'save_post_' . self::POST_TYPE, [ $this, 'save_post' ] );
+		// Old Edgenet functionality no longer required now that docs are linked via ACF
+//		add_action( 'save_post_' . self::POST_TYPE, [ $this, 'save_post' ] );
 	}
 
 	/**
