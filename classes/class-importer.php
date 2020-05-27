@@ -497,6 +497,43 @@ class Importer {
 		edgenet()->debug->notice( "\n" );
 	}
 
+	/**
+	 * Sync all Edgenet Model numbers
+	 */
+	public function sync_all_model_nos() {
+		global $sync_taxonomies;
+		$sync_taxonomies = [];
+		edgenet()->debug->notice( "\n" );
+		edgenet()->debug->notice( "\n" );
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+		edgenet()->debug->notice( __( 'Start SYNC_ALL_CUSTOM_FIELDS_ATTRIBUTES', 'edgenet' ) );
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+
+		// Get array of all product IDs
+		$args = [
+			'post_type'      => 'product',
+			'post_status'    => 'all',
+			'posts_per_page' => - 1,
+			'fields'         => 'ids',
+		];
+
+		$product_ids = new \WP_Query( $args );
+
+		edgenet()->debug->notice( __( sprintf( 'Syncing %s products', $product_ids->post_count ), 'edgenet' ) );
+
+		foreach ( $product_ids->posts as $product_id ) {
+			edgenet()->debug->notice( __( sprintf( 'Starting sync for Product ID: %s', $product_id ), 'edgenet' ) );
+			$this->sync_product_model_no( $product_id );
+			edgenet()->debug->notice( __( sprintf( 'Stopping sync for Product ID: %s', $product_id ), 'edgenet' ) );
+		}
+
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+		edgenet()->debug->notice( __( 'End SYNC_ALL_CUSTOM_FIELDS_ATTRIBUTES', 'edgenet' ) );
+		edgenet()->debug->notice( str_repeat( '*', 32 ) );
+		edgenet()->debug->notice( "\n" );
+		edgenet()->debug->notice( "\n" );
+	}
+
 	public function sync_all_document_product_relationships() {
 		edgenet()->debug->notice( "\n" );
 		edgenet()->debug->notice( "\n" );
@@ -536,11 +573,6 @@ class Importer {
 	 */
 	public function sync_product_custom_fields_attributes( $product_id ) {
 		global $sync_taxonomies;
-
-		$model_no = get_post_meta( $product_id, '_model_no', true );
-		if ( ! empty( $model_no ) ) {
-			update_field( 'ussc_model_no', $model_no, $product_id );
-		}
 
 		// Features.
 		$features = get_post_meta( $product_id, '_features', true );
@@ -664,6 +696,16 @@ class Importer {
 
 		edgenet()->debug->notice( __( '- Updating product attributes post meta', 'edgenet' ) );
 		update_post_meta( $product_id, '_product_attributes', $att_meta );
+	}
+
+	public function sync_product_model_no( $product_id ) {
+		$model_no = get_post_meta( $product_id, '_model_no', true );
+		if ( ! empty( $model_no ) ) {
+			update_field( 'ussc_model_no', $model_no, $product_id );
+			edgenet()->debug->notice( __( sprintf( 'Adding Model #: %s to Product ID: %s', $model_no, $product_id ), 'edgenet' ) );
+		} else {
+			edgenet()->debug->notice( __( sprintf( 'No model number found for Product ID: %s', $product_id ), 'edgenet' ) );
+		}
 	}
 
 	public function sync_document_product_relationship( $product_id ) {
